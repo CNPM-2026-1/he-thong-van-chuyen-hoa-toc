@@ -1,0 +1,34 @@
+@startuml
+actor DRIVER
+actor CUSTOMER
+participant "Driver App" as App
+participant "NestJS API" as API
+participant "OTP/SMS Provider" as SMS
+participant "Object Storage" as Storage
+database "PostgreSQL" as DB
+participant "Socket.IO" as Socket
+
+DRIVER -> App : Chọn đơn cần giao
+App -> API : POST /api/v1/orders/{orderId}/delivery/start
+API -> DB : Kiểm tra tài xế được phân công, chuyển OUT_FOR_DELIVERY
+DB --> API : Order OUT_FOR_DELIVERY
+API --> App : 200 Order OUT_FOR_DELIVERY
+App -> API : POST /api/v1/orders/{orderId}/delivery/otp
+API -> DB : Kiểm tra đơn OUT_FOR_DELIVERY
+API -> SMS : Gửi OTP tới người nhận
+SMS --> CUSTOMER : SMS chứa OTP
+API --> App : 202 OTP sent (không trả mã OTP)
+CUSTOMER -> DRIVER : Cung cấp OTP trực tiếp
+DRIVER -> App : Nhập OTP + chọn ảnh chứng minh
+App -> API : POST /api/v1/media/presigned-uploads
+API --> App : presigned upload URL + objectKey
+App -> Storage : PUT ảnh theo presigned URL
+Storage --> App : 200 Uploaded
+App -> API : POST /api/v1/orders/{orderId}/delivery/confirm
+API -> API : Verify OTP, quyền DRIVER, objectKey
+API -> DB : Transaction: DeliveryAttempt + COD + Order DELIVERED + history
+DB --> API : Delivery completed
+API -> Socket : Emit delivery:completed + order:status_changed
+API --> App : 200 Delivery result
+App --> DRIVER : Hiển thị giao hàng thành công
+@enduml

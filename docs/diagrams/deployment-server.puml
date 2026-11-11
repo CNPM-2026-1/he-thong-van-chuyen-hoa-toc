@@ -1,0 +1,38 @@
+@startuml
+skinparam shadowing false
+skinparam componentStyle rectangle
+
+cloud "Internet" as Internet
+node "DNS + HTTPS Load Balancer / Nginx" as Edge
+node "Public subnet" {
+  artifact "Web Admin static build\n(CDN / Web hosting)" as Web
+}
+node "Private application subnet" {
+  node "Backend container(s)" as AppNodes {
+    artifact "NestJS REST API\n/api/v1" as API
+    artifact "Socket.IO Gateway" as Socket
+  }
+  database "PostgreSQL managed / private" as DB
+  database "Redis (optional)\nSocket adapter / cache" as Redis
+}
+cloud "Object Storage\nS3-compatible" as Storage
+cloud "External providers\nSMS/OTP / Push / Maps" as Providers
+
+Internet --> Edge : HTTPS
+Internet --> Web : HTTPS
+Web --> Edge : API + Socket.IO
+Edge --> API : HTTPS reverse proxy
+Edge --> Socket : WebSocket upgrade
+API --> DB : private connection
+API --> Redis : pub/sub (if multi-instance)
+Socket --> Redis : adapter (if multi-instance)
+API --> Storage : presigned URL / metadata
+Web --> Storage : upload via presigned URL
+API --> Providers : outbound HTTPS
+
+note bottom of DB
+CSDL không public Internet.
+Backup, monitoring và secrets
+được quản lý ở môi trường deploy.
+end note
+@enduml

@@ -1,0 +1,28 @@
+@startuml
+left to right direction
+skinparam shadowing false
+actor STAFF
+rectangle "Ứng dụng nhân viên quầy/bến" {
+  usecase "Đăng nhập" as A
+  usecase "Tra cứu đơn / quét QR" as B
+  usecase "Kiểm tra kiện hàng" as C
+  usecase "Cân và cập nhật khối lượng" as D
+  usecase "Xác nhận tiếp nhận" as E
+  usecase "In tem / mã vận đơn" as F
+  usecase "Xem manifest chuyến" as G
+  usecase "Quét xếp / dỡ kiện" as H
+  usecase "Tra cứu bến / tuyến" as I
+}
+STAFF --> A
+STAFF --> B
+STAFF --> C
+STAFF --> D
+STAFF --> E
+STAFF --> F
+STAFF --> G
+STAFF --> H
+STAFF --> I
+E .> B : <<include>>
+E .> D : <<include>>
+H .> G : <<include>>
+@enduml

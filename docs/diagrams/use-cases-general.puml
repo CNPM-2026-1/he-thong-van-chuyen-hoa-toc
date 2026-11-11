@@ -1,0 +1,54 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+actor CUSTOMER
+actor STAFF
+actor DRIVER
+actor MANAGER
+actor ADMIN
+
+rectangle "Hệ thống vận chuyển hỏa tốc liên tỉnh" {
+  usecase "Đăng ký / đăng nhập" as UCAuth
+  usecase "Xem danh mục bến, tuyến" as UCCatalogRead
+  usecase "Tính cước / báo giá" as UCQuote
+  usecase "Tạo và quản lý đơn" as UCOrder
+  usecase "Theo dõi đơn / vị trí xe" as UCTrack
+  usecase "Xác nhận nhận hàng bằng OTP" as UCOtp
+  usecase "Tiếp nhận hàng tại quầy" as UCReceive
+  usecase "Quét QR / in tem" as UCScan
+  usecase "Quản lý chuyến và manifest" as UCTrip
+  usecase "Cập nhật vị trí xe" as UCLocation
+  usecase "Giao hàng / thu COD" as UCDelivery
+  usecase "Báo cáo và xử lý sự cố" as UCIncident
+  usecase "Đối soát COD / thống kê" as UCCod
+  usecase "Quản lý tài khoản và danh mục" as UCAdmin
+}
+
+CUSTOMER --> UCAuth
+CUSTOMER --> UCQuote
+CUSTOMER --> UCOrder
+CUSTOMER --> UCTrack
+CUSTOMER --> UCOtp
+CUSTOMER --> UCCatalogRead
+STAFF --> UCAuth
+STAFF --> UCReceive
+STAFF --> UCScan
+STAFF --> UCCatalogRead
+STAFF --> UCTrip
+DRIVER --> UCAuth
+DRIVER --> UCTrip
+DRIVER --> UCScan
+DRIVER --> UCLocation
+DRIVER --> UCDelivery
+DRIVER --> UCIncident
+MANAGER --> UCAuth
+MANAGER --> UCTrip
+MANAGER --> UCIncident
+MANAGER --> UCCod
+MANAGER --> UCAdmin
+ADMIN --> UCAuth
+ADMIN --> UCAdmin
+ADMIN --> UCCod
+@enduml

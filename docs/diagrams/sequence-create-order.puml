@@ -1,0 +1,23 @@
+@startuml
+actor CUSTOMER
+participant "Mobile App" as App
+participant "NestJS API" as API
+database "PostgreSQL" as DB
+participant "Socket.IO" as Socket
+
+CUSTOMER -> App : Nhập tuyến, kiện hàng, COD
+App -> API : POST /api/v1/pricing/quotes
+API -> DB : Đọc price_rules có hiệu lực
+DB --> API : Price rule
+API -> API : Tính phí server-side
+API --> App : PriceQuote (breakdown)
+CUSTOMER -> App : Xác nhận tạo đơn
+App -> API : POST /api/v1/orders
+API -> API : Validate user, tuyến, dữ liệu kiện
+API -> DB : Transaction: tạo Order + status history
+DB --> API : Order PENDING_RECEIPT
+API -> Socket : Emit order:status_changed
+Socket --> App : Event tới room order/user
+API --> App : 201 Order + trackingCode
+App --> CUSTOMER : Hiển thị mã vận đơn
+@enduml

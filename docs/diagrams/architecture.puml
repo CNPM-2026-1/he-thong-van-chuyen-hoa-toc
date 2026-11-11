@@ -1,0 +1,47 @@
+@startuml
+left to right direction
+skinparam componentStyle rectangle
+skinparam shadowing false
+skinparam packageStyle rectangle
+
+actor "Customer / Staff / Driver" as MobileUsers
+actor "Manager / Admin" as AdminUsers
+
+node "Client layer" {
+  component "Mobile App\nReact Native + Expo" as Mobile
+  component "Web Admin\nReact + Vite" as Web
+}
+
+node "Application layer" {
+  component "Backend API\nNestJS + REST /api/v1" as API
+  component "Realtime Gateway\nSocket.IO" as Realtime
+  component "Authentication &\nAuthorization (JWT/RBAC)" as Auth
+  component "Business modules\nOrders / Pricing / Trips /\nManifest / Delivery / COD / Incidents" as Modules
+}
+
+database "PostgreSQL\n(Prisma ORM)" as DB
+cloud "Object Storage\n(S3-compatible / MinIO)" as Storage
+cloud "External providers\nSMS/OTP / Push / Maps" as External
+
+MobileUsers --> Mobile
+AdminUsers --> Web
+Mobile --> API : HTTPS JSON
+Web --> API : HTTPS JSON
+Mobile <--> Realtime : Socket.IO
+Web <--> Realtime : Socket.IO
+API --> Auth
+API --> Modules
+Realtime --> Auth : validate access token
+Modules --> DB : read/write
+API --> DB : Prisma
+API --> Storage : presigned upload metadata
+Mobile --> Storage : upload via presigned URL
+Web --> Storage : upload via presigned URL
+Modules --> External : HTTPS API/SDK
+Realtime --> Modules : publish domain events
+
+note bottom of DB
+Client không truy cập trực tiếp CSDL.
+Backend là nguồn dữ liệu chuẩn.
+end note
+@enduml

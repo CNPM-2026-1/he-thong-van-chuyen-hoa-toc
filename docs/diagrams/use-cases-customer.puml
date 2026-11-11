@@ -1,0 +1,27 @@
+@startuml
+left to right direction
+skinparam shadowing false
+actor CUSTOMER
+rectangle "Ứng dụng khách hàng" {
+  usecase "Đăng ký / đăng nhập" as A
+  usecase "Xem bến và tuyến" as B
+  usecase "Nhập thông tin kiện hàng" as C
+  usecase "Yêu cầu báo giá" as D
+  usecase "Tạo đơn vận chuyển" as E
+  usecase "Xem danh sách / chi tiết đơn" as F
+  usecase "Theo dõi trạng thái và vị trí xe" as G
+  usecase "Nhận OTP và cung cấp khi nhận hàng" as H
+  usecase "Hủy đơn khi còn đủ điều kiện" as I
+}
+CUSTOMER --> A
+CUSTOMER --> B
+CUSTOMER --> C
+CUSTOMER --> D
+CUSTOMER --> E
+CUSTOMER --> F
+CUSTOMER --> G
+CUSTOMER --> H
+CUSTOMER --> I
+C .> D : <<include>>
+E .> D : <<include>>
+@enduml
