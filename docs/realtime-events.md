@@ -25,11 +25,12 @@ const socket = io(API_BASE_URL, {
 {
   "eventId": "uuid",
   "occurredAt": "2026-11-11T08:30:00.000Z",
+  "resourceVersion": 12,
   "data": {}
 }
 ```
 
-- `eventId` duy nhất để client loại bỏ event trùng khi reconnect. `occurredAt` là UTC.
+- `eventId` duy nhất để client loại bỏ event trùng khi reconnect. `occurredAt` là UTC. `resourceVersion` tăng đơn điệu theo resource và được ghi cùng transaction với thay đổi; client bỏ qua event có version không lớn hơn version đã áp dụng và tải REST snapshot nếu phát hiện bị nhảy version.
 - Không gửi access token, refresh token, OTP, mật khẩu hoặc dữ liệu cá nhân không cần thiết trong payload.
 
 ## 3. Rooms và quyền tham gia
@@ -37,11 +38,11 @@ const socket = io(API_BASE_URL, {
 | Room | Ai được tham gia | Mục đích |
 |---|---|---|
 | `user:{userId}` | Chính user đó; ADMIN theo chính sách audit | Thông báo cá nhân |
-| `order:{orderId}` | CUSTOMER sở hữu đơn, STAFF/MANAGER liên quan, DRIVER được phân công | Trạng thái và tiến trình đơn |
-| `trip:{tripId}` | DRIVER được phân công, STAFF/MANAGER vận hành, CUSTOMER của các đơn thuộc chuyến theo policy | Vị trí xe, manifest/chuyến |
+| `order:{orderId}` | CUSTOMER sở hữu đơn; STAFF ở bến liên quan; MANAGER trong phạm vi phụ trách; DRIVER được phân công trên chuyến hiện tại | Trạng thái và tiến trình đơn |
+| `trip:{tripId}` | DRIVER được phân công; STAFF ở bến liên quan; MANAGER trong phạm vi phụ trách; CUSTOMER của đơn trên chuyến chỉ trong giai đoạn IN_TRANSIT | Vị trí xe, manifest/chuyến |
 | `station:{stationId}` | STAFF/MANAGER được phân công tại bến | Đơn chờ tiếp nhận và hoạt động ở bến |
 
-Client không tự chọn room tùy ý. Dùng event client-to-server `room:join` với `{ "resourceType": "order", "resourceId": "uuid" }`; server phải kiểm tra quyền. Khi rời màn hình, client gửi `room:leave` cùng payload.
+Đây là chính sách mặc định đề xuất của TV7/TV8. Client không tự chọn room tùy ý. Dùng event client-to-server `room:join` với `{ "resourceType": "order", "resourceId": "uuid" }`; server phải kiểm tra quyền ở thời điểm join và định kỳ khi thay đổi phân công. Khi đơn không còn IN_TRANSIT, CUSTOMER bị loại khỏi room chuyến và không nhận vị trí mới. Khi rời màn hình, client gửi `room:leave` cùng payload.
 
 ## 4. Danh sách event
 
@@ -63,6 +64,7 @@ Ví dụ `order:status_changed`:
 {
   "eventId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
   "occurredAt": "2026-11-11T08:30:00.000Z",
+  "resourceVersion": 12,
   "data": {
     "orderId": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
     "trackingCode": "HT202611110001",
@@ -80,6 +82,7 @@ Ví dụ `trip:location_updated`:
 {
   "eventId": "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
   "occurredAt": "2026-11-11T08:31:00.000Z",
+  "resourceVersion": 7,
   "data": {
     "tripId": "ffffffff-ffff-4fff-8fff-ffffffffffff",
     "vehicleId": "11111111-1111-4111-8111-111111111112",
@@ -108,12 +111,13 @@ Client không phát `order:status_changed`, `trip:location_updated` hay `deliver
 - Ack lỗi chuẩn: `{ "ok": false, "error": { "code": "FORBIDDEN", "message": "Not allowed to join this room" } }`.
 - Mất kết nối: dùng reconnect có backoff; sau reconnect xác thực lại và join lại room cần thiết.
 - Event realtime không thay thế REST source of truth. Sau reconnect hoặc khi nghi ngờ mất event, client gọi REST để đồng bộ trạng thái hiện tại.
-- `eventId` dùng deduplicate; client không giả định event đến đúng thứ tự tuyệt đối. So sánh `occurredAt` và tải lại resource nếu có xung đột.
+- `eventId` dùng deduplicate; client không giả định event đến đúng thứ tự tuyệt đối. Dùng `resourceVersion` để phát hiện event thiếu/trễ; nếu version bị nhảy hoặc xung đột, tải lại resource qua REST.
 - Vị trí xe có thể gửi mỗi 5-15 giây khi đang di chuyển (giá trị cấu hình đề xuất); chỉ phát khi tọa độ hợp lệ và trip còn hoạt động.
 
 ## 6. Chính sách bảo mật/riêng tư
 
 - Chỉ phát vị trí xe cho người có quyền xem chuyến/đơn liên quan.
+- Quyền CUSTOMER xem vị trí chỉ trong thời gian đơn ở `IN_TRANSIT`; ngừng phát sau khi chuyến đến bến đích hoặc đơn rời chuyến. Không phát vị trí lưu trữ cũ khi client join room lần đầu; client lấy snapshot vị trí mới nhất qua REST, API phải giới hạn dữ liệu theo chính sách retention được nhóm chọn.
 - Không đưa OTP vào event; chỉ thông báo OTP đã gửi hoặc giao hàng hoàn tất.
 - Giới hạn tần suất cập nhật vị trí, kiểm tra quyền DRIVER và trip được phân công.
 - Với nhiều backend instance, dùng Socket.IO adapter (ví dụ Redis) để đồng bộ room/event; local một instance chưa cần Redis.

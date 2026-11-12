@@ -9,8 +9,10 @@ Tài liệu rút gọn này cụ thể hóa các quy ước chung trong kế ho�
 - Header xác thực: `Authorization: Bearer <accessToken>`.
 - Danh sách trả về đúng cấu trúc `{ "items": [...], "page": 1, "total": 0 }`.
 - Lỗi trả về `{ "code": "...", "message": "..." }`.
+- Mã lỗi đề xuất thống nhất: `VALIDATION_ERROR` (400), `UNAUTHENTICATED` (401), `FORBIDDEN` (403), `NOT_FOUND` (404), `CONFLICT` (409), `UNPROCESSABLE_ENTITY` (422), `RATE_LIMITED` (429), `INTERNAL_ERROR` (500). `message` không chứa stack trace, token, OTP hoặc dữ liệu nhạy cảm.
 - Login trả về `{ "accessToken": "...", "refreshToken": "...", "user": {...} }`.
 - ID dùng UUID; thời gian ISO-8601 UTC; tiền là số nguyên VND; khối lượng là gram.
+- POST tạo/cập nhật nghiệp vụ có thể bị gửi lại sau timeout phải nhận `Idempotency-Key` dạng UUID (đã khai báo trong OpenAPI). Cùng actor + operation + key + request hash trả lại cùng kết quả; với endpoint public, key scope theo operation. Dùng lại key với payload khác trả `409 CONFLICT`. Backend giữ key tối thiểu 24 giờ (đề xuất).
 
 ## 2. Ví dụ đăng nhập
 
@@ -86,6 +88,11 @@ Response `400`:
 - Không cho client tự cập nhật trạng thái đơn bất kỳ. Dùng endpoint nghiệp vụ tương ứng (nhận tại quầy, điều phối chuyến, xác nhận giao hàng).
 - `DELETE` trên danh mục là xóa mềm/vô hiệu hóa; đơn/chuyến đã tham chiếu không bị mất.
 - Những ví dụ ở đây là dữ liệu giả để phát triển giao diện, không phải dữ liệu thật.
+- OpenAPI bao gồm API nền tảng Sprint 1 (auth, users, danh mục) và API nghiệp vụ các sprint sau theo đúng đầu mục TV8; API sprint sau, enum, quyền và công thức dưới đây vẫn là đề xuất độc lập của TV7/TV8, không hàm ý đã được các đầu mục khác duyệt.
+- Quy tắc tính cước đề xuất: `weightKg = weightGrams / 1000`; `weightFeeVnd = ceil(weightKg * pricePerKgVnd)`; `subTotalVnd = baseFeeVnd + weightFeeVnd`; phí EXPRESS là `ceil(subTotalVnd * (expressMultiplier - 1))`, STANDARD không cộng phí này; cộng `codFeeVnd` khi `codAmountVnd > 0`. Backend tính lại tại thời điểm tạo đơn. Nếu không có đúng một bảng giá hoạt động phù hợp tuyến/thời điểm, trả `409 CONFLICT`.
+- Mặc định quyền theo resource: CUSTOMER chỉ trên đơn của mình; STAFF trên bến được phân công; DRIVER trên chuyến được phân công; MANAGER trong phạm vi nhà xe/bến được giao; ADMIN toàn hệ thống và mọi thao tác được audit. API phải kiểm tra phạm vi ở backend; `x-roles` chỉ mô tả role, không thay thế kiểm tra quyền sở hữu/phân công.
+- Mọi thay đổi trạng thái phải kiểm tra chuyển trạng thái hợp lệ, điều kiện nghiệp vụ và cập nhật bản ghi + lịch sử trong một transaction. Không cho client gửi trực tiếp trạng thái đích tùy ý; endpoint chuyên biệt quyết định trạng thái kế tiếp.
+- Gửi lại request chỉ an toàn với `Idempotency-Key`; retry sau 401 bằng refresh một lần, sau 429 theo `Retry-After`; không tự retry lỗi 4xx khác.
 
 
 ## 6. Ví dụ response cho toàn bộ endpoint

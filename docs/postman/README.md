@@ -5,5 +5,6 @@ Import ba file JSON trong Postman theo thứ tự: collection `express-delivery-
 - **Local - Prism Mock**: `baseUrl=http://localhost:4010/api/v1`; chạy `npm install && npm run mock` tại `docs/mock-server` trước.
 - **Server - Staging (replace URL)**: thay `https://api.example.com/api/v1` bằng domain staging thật, sau đó login để lấy token. Không commit token thật vào repository.
 - Request Login và Refresh tự lưu `accessToken`/`refreshToken` từ response vào environment.
+- Các POST tạo/cập nhật có `Idempotency-Key` bằng Postman dynamic variable `{{$guid}}`, tạo UUID mới khi gửi request. Nếu cần gửi lại cùng một thao tác sau timeout trên server thật, giữ và dùng lại đúng giá trị key của request ban đầu; không tạo key mới.
 - Collection chứa endpoint Auth, Users, danh mục Sprint 1, Pricing, Orders, Trips, Manifest, Tracking, Delivery, COD, Incidents, Statistics và Media.
 - Một số endpoint nghiệp vụ ở OpenAPI là thiết kế đề xuất cho sprint sau; Prism tạo response giả từ schema, không thực hiện nghiệp vụ hay lưu dữ liệu.

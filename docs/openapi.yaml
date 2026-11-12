@@ -4,7 +4,7 @@ info:
   version: 1.0.0
   description: 'Hợp đồng REST API đề xuất cho hệ thống quản lý quy trình vận chuyển hàng hóa hỏa tốc liên tỉnh.
     Quy ước Sprint 1: /api/v1, JSON, role CUSTOMER/STAFF/DRIVER/MANAGER/ADMIN; list {items,page,total}; errors {code,message}.
-    Những endpoint nghiệp vụ Sprint 2+ cần nhóm xác nhận trước khi triển khai.'
+    Endpoint auth/users/danh mục thuộc phạm vi nền tảng Sprint 1. Các endpoint nghiệp vụ được đặc tả cho Sprint 2+ là đề xuất độc lập của TV8 để mobile/web dùng mock; role, data scope, transition, công thức giá/COD và chính sách retry cần đối chiếu với các đầu mục liên quan trước khi triển khai chính thức. Mã lỗi dùng VALIDATION_ERROR (400), UNAUTHENTICATED (401), FORBIDDEN (403), NOT_FOUND (404), CONFLICT (409), UNPROCESSABLE_ENTITY (422). x-roles chỉ là role tối thiểu; backend vẫn phải kiểm tra quyền sở hữu/phân công theo resource.'
 servers:
 - url: http://localhost:3000/api/v1
   description: Backend local (NestJS)
@@ -49,6 +49,8 @@ paths:
   /auth/register:
     post:
       operationId: registerCustomer
+      parameters:
+      - $ref: "#/components/parameters/IdempotencyKey"
       tags:
       - Auth
       summary: Đăng ký tài khoản khách hàng
@@ -84,7 +86,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -93,7 +95,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -102,7 +104,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -111,7 +113,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -120,8 +122,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles:
       - PUBLIC
       security: []
@@ -170,7 +176,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -179,7 +185,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -188,7 +194,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -197,7 +203,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -206,8 +212,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles:
       - PUBLIC
       security: []
@@ -253,7 +263,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -262,7 +272,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -271,7 +281,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -280,7 +290,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -289,8 +299,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles:
       - PUBLIC
       security: []
@@ -305,6 +319,8 @@ paths:
   /auth/logout:
     post:
       operationId: logout
+      parameters:
+      - $ref: "#/components/parameters/IdempotencyKey"
       tags:
       - Auth
       summary: Đăng xuất / thu hồi refresh token
@@ -334,7 +350,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -343,7 +359,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -352,7 +368,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -361,7 +377,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -370,8 +386,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles: &id002
       - CUSTOMER
       - STAFF
@@ -419,7 +439,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -428,7 +448,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -437,7 +457,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -446,7 +466,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -455,8 +475,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles: *id002
       security:
       - bearerAuth: []
@@ -510,7 +534,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -519,7 +543,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -528,7 +552,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -537,7 +561,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -546,8 +570,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles:
       - MANAGER
       - ADMIN
@@ -578,6 +606,8 @@ paths:
         description: Từ khóa tìm kiếm tùy resource.
     post:
       operationId: createUser
+      parameters:
+      - $ref: "#/components/parameters/IdempotencyKey"
       tags:
       - Users
       summary: Tạo tài khoản nhân viên/tài xế
@@ -613,7 +643,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -622,7 +652,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -631,7 +661,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -640,7 +670,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -649,8 +679,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles:
       - MANAGER
       - ADMIN
@@ -699,7 +733,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -708,7 +742,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -717,7 +751,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -726,7 +760,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -735,8 +769,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles:
       - MANAGER
       - ADMIN
@@ -779,7 +817,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -788,7 +826,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -797,7 +835,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -806,7 +844,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -815,8 +853,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles:
       - MANAGER
       - ADMIN
@@ -868,7 +910,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -877,7 +919,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -886,7 +928,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -895,7 +937,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -904,8 +946,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles:
       - MANAGER
       - ADMIN
@@ -949,7 +995,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -958,7 +1004,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -967,7 +1013,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -976,7 +1022,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -985,8 +1031,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles:
       - MANAGER
       - ADMIN
@@ -1067,7 +1117,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -1076,7 +1126,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -1085,7 +1135,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -1094,7 +1144,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -1103,8 +1153,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles: &id005
       - CUSTOMER
       - STAFF
@@ -1138,6 +1192,8 @@ paths:
         description: Từ khóa tìm kiếm tùy resource.
     post:
       operationId: createStation
+      parameters:
+      - $ref: "#/components/parameters/IdempotencyKey"
       tags:
       - Stations
       summary: Tạo bến
@@ -1166,7 +1222,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -1175,7 +1231,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -1184,7 +1240,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -1193,7 +1249,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -1202,8 +1258,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles:
       - MANAGER
       - ADMIN
@@ -1255,7 +1315,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -1264,7 +1324,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -1273,7 +1333,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -1282,7 +1342,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -1291,8 +1351,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles: *id005
       security:
       - bearerAuth: []
@@ -1333,7 +1397,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -1342,7 +1406,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -1351,7 +1415,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -1360,7 +1424,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -1369,8 +1433,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles:
       - MANAGER
       - ADMIN
@@ -1420,7 +1488,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -1429,7 +1497,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -1438,7 +1506,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -1447,7 +1515,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -1456,8 +1524,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles:
       - MANAGER
       - ADMIN
@@ -1528,7 +1600,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -1537,7 +1609,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -1546,7 +1618,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -1555,7 +1627,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -1564,8 +1636,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles: &id008
       - CUSTOMER
       - STAFF
@@ -1599,6 +1675,8 @@ paths:
         description: Từ khóa tìm kiếm tùy resource.
     post:
       operationId: createRoute
+      parameters:
+      - $ref: "#/components/parameters/IdempotencyKey"
       tags:
       - Routes
       summary: Tạo tuyến
@@ -1627,7 +1705,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -1636,7 +1714,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -1645,7 +1723,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -1654,7 +1732,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -1663,8 +1741,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles:
       - MANAGER
       - ADMIN
@@ -1715,7 +1797,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -1724,7 +1806,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -1733,7 +1815,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -1742,7 +1824,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -1751,8 +1833,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles: *id008
       security:
       - bearerAuth: []
@@ -1793,7 +1879,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -1802,7 +1888,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -1811,7 +1897,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -1820,7 +1906,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -1829,8 +1915,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles:
       - MANAGER
       - ADMIN
@@ -1880,7 +1970,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -1889,7 +1979,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -1898,7 +1988,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -1907,7 +1997,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -1916,8 +2006,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles:
       - MANAGER
       - ADMIN
@@ -1987,7 +2081,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -1996,7 +2090,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -2005,7 +2099,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -2014,7 +2108,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -2023,8 +2117,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles: &id011
       - MANAGER
       - ADMIN
@@ -2055,6 +2153,8 @@ paths:
         description: Từ khóa tìm kiếm tùy resource.
     post:
       operationId: createVehicle
+      parameters:
+      - $ref: "#/components/parameters/IdempotencyKey"
       tags:
       - Vehicles
       summary: Tạo xe
@@ -2083,7 +2183,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -2092,7 +2192,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -2101,7 +2201,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -2110,7 +2210,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -2119,8 +2219,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles:
       - MANAGER
       - ADMIN
@@ -2170,7 +2274,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -2179,7 +2283,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -2188,7 +2292,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -2197,7 +2301,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -2206,8 +2310,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles: *id011
       security:
       - bearerAuth: []
@@ -2248,7 +2356,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -2257,7 +2365,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -2266,7 +2374,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -2275,7 +2383,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -2284,8 +2392,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles:
       - MANAGER
       - ADMIN
@@ -2335,7 +2447,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -2344,7 +2456,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -2353,7 +2465,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -2362,7 +2474,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -2371,8 +2483,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles:
       - MANAGER
       - ADMIN
@@ -2442,7 +2558,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -2451,7 +2567,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -2460,7 +2576,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -2469,7 +2585,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -2478,8 +2594,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles: &id014
       - MANAGER
       - ADMIN
@@ -2510,6 +2630,8 @@ paths:
         description: Từ khóa tìm kiếm tùy resource.
     post:
       operationId: createDriver
+      parameters:
+      - $ref: "#/components/parameters/IdempotencyKey"
       tags:
       - Drivers
       summary: Tạo tài xế
@@ -2538,7 +2660,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -2547,7 +2669,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -2556,7 +2678,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -2565,7 +2687,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -2574,8 +2696,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles:
       - MANAGER
       - ADMIN
@@ -2623,7 +2749,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -2632,7 +2758,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -2641,7 +2767,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -2650,7 +2776,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -2659,8 +2785,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles: *id014
       security:
       - bearerAuth: []
@@ -2701,7 +2831,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -2710,7 +2840,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -2719,7 +2849,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -2728,7 +2858,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -2737,8 +2867,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles:
       - MANAGER
       - ADMIN
@@ -2788,7 +2922,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -2797,7 +2931,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -2806,7 +2940,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -2815,7 +2949,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -2824,8 +2958,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles:
       - MANAGER
       - ADMIN
@@ -2897,7 +3035,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -2906,7 +3044,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -2915,7 +3053,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -2924,7 +3062,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -2933,8 +3071,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles: &id017
       - MANAGER
       - ADMIN
@@ -2965,6 +3107,8 @@ paths:
         description: Từ khóa tìm kiếm tùy resource.
     post:
       operationId: createPriceRule
+      parameters:
+      - $ref: "#/components/parameters/IdempotencyKey"
       tags:
       - Price Rules
       summary: Tạo bảng giá
@@ -2993,7 +3137,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -3002,7 +3146,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -3011,7 +3155,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -3020,7 +3164,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -3029,8 +3173,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles:
       - MANAGER
       - ADMIN
@@ -3082,7 +3230,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -3091,7 +3239,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -3100,7 +3248,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -3109,7 +3257,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -3118,8 +3266,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles: *id017
       security:
       - bearerAuth: []
@@ -3160,7 +3312,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -3169,7 +3321,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -3178,7 +3330,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -3187,7 +3339,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -3196,8 +3348,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles:
       - MANAGER
       - ADMIN
@@ -3247,7 +3403,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -3256,7 +3412,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -3265,7 +3421,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -3274,7 +3430,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -3283,8 +3439,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles:
       - MANAGER
       - ADMIN
@@ -3335,7 +3495,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -3344,7 +3504,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -3353,7 +3513,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -3362,7 +3522,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -3371,8 +3531,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles:
       - PUBLIC
       security: []
@@ -3453,7 +3617,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -3462,7 +3626,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -3471,7 +3635,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -3480,7 +3644,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -3489,8 +3653,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles: *id002
       security:
       - bearerAuth: []
@@ -3519,6 +3687,8 @@ paths:
         description: Từ khóa tìm kiếm tùy resource.
     post:
       operationId: createOrder
+      parameters:
+      - $ref: "#/components/parameters/IdempotencyKey"
       tags:
       - Orders
       summary: Tạo đơn hàng
@@ -3547,7 +3717,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -3556,7 +3726,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -3565,7 +3735,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -3574,7 +3744,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -3583,8 +3753,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles:
       - CUSTOMER
       security:
@@ -3636,7 +3810,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -3645,7 +3819,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -3654,7 +3828,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -3663,7 +3837,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -3672,8 +3846,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles: *id002
       security:
       - bearerAuth: []
@@ -3731,7 +3909,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -3740,7 +3918,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -3749,7 +3927,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -3758,7 +3936,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -3767,14 +3945,19 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles:
       - STAFF
       - MANAGER
       security:
       - bearerAuth: []
       parameters:
+      - $ref: "#/components/parameters/IdempotencyKey"
       - name: orderId
         in: path
         required: true
@@ -3838,7 +4021,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -3847,7 +4030,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -3856,7 +4039,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -3865,7 +4048,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -3874,8 +4057,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles:
       - CUSTOMER
       - MANAGER
@@ -3883,6 +4070,7 @@ paths:
       security:
       - bearerAuth: []
       parameters:
+      - $ref: "#/components/parameters/IdempotencyKey"
       - name: orderId
         in: path
         required: true
@@ -3936,7 +4124,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -3945,7 +4133,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -3954,7 +4142,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -3963,7 +4151,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -3972,8 +4160,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles: *id002
       security:
       - bearerAuth: []
@@ -4042,7 +4234,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -4051,7 +4243,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -4060,7 +4252,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -4069,7 +4261,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -4078,8 +4270,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles:
       - STAFF
       - DRIVER
@@ -4112,6 +4308,8 @@ paths:
         description: Từ khóa tìm kiếm tùy resource.
     post:
       operationId: createTrip
+      parameters:
+      - $ref: "#/components/parameters/IdempotencyKey"
       tags:
       - Trips
       summary: Tạo chuyến xe
@@ -4140,7 +4338,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -4149,7 +4347,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -4158,7 +4356,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -4167,7 +4365,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -4176,8 +4374,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles:
       - MANAGER
       - ADMIN
@@ -4227,7 +4429,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -4236,7 +4438,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -4245,7 +4447,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -4254,7 +4456,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -4263,8 +4465,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles:
       - STAFF
       - DRIVER
@@ -4320,7 +4526,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -4329,7 +4535,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -4338,7 +4544,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -4347,7 +4553,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -4356,8 +4562,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles:
       - DRIVER
       - MANAGER
@@ -4415,7 +4625,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -4424,7 +4634,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -4433,7 +4643,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -4442,7 +4652,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -4451,8 +4661,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles:
       - STAFF
       - DRIVER
@@ -4503,7 +4717,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -4512,7 +4726,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -4521,7 +4735,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -4530,7 +4744,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -4539,14 +4753,19 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles:
       - MANAGER
       - STAFF
       security:
       - bearerAuth: []
       parameters:
+      - $ref: "#/components/parameters/IdempotencyKey"
       - name: tripId
         in: path
         required: true
@@ -4592,7 +4811,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -4601,7 +4820,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -4610,7 +4829,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -4619,7 +4838,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -4628,8 +4847,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles:
       - STAFF
       - DRIVER
@@ -4691,7 +4914,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -4700,7 +4923,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -4709,7 +4932,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -4718,7 +4941,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -4727,13 +4950,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles:
       - DRIVER
       security:
       - bearerAuth: []
       parameters:
+      - $ref: "#/components/parameters/IdempotencyKey"
       - name: tripId
         in: path
         required: true
@@ -4783,7 +5011,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -4792,7 +5020,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -4801,7 +5029,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -4810,7 +5038,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -4819,8 +5047,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles:
       - STAFF
       - DRIVER
@@ -4870,7 +5102,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -4879,7 +5111,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -4888,7 +5120,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -4897,7 +5129,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -4906,8 +5138,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles:
       - DRIVER
       - STAFF
@@ -4915,6 +5151,7 @@ paths:
       security:
       - bearerAuth: []
       parameters:
+      - $ref: "#/components/parameters/IdempotencyKey"
       - name: orderId
         in: path
         required: true
@@ -4961,7 +5198,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -4970,7 +5207,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -4979,7 +5216,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -4988,7 +5225,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -4997,13 +5234,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles:
       - DRIVER
       security:
       - bearerAuth: []
       parameters:
+      - $ref: "#/components/parameters/IdempotencyKey"
       - name: orderId
         in: path
         required: true
@@ -5069,7 +5311,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -5078,7 +5320,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -5087,7 +5329,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -5096,7 +5338,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -5105,13 +5347,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles:
       - DRIVER
       security:
       - bearerAuth: []
       parameters:
+      - $ref: "#/components/parameters/IdempotencyKey"
       - name: orderId
         in: path
         required: true
@@ -5157,7 +5404,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -5166,7 +5413,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -5175,7 +5422,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -5184,7 +5431,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -5193,13 +5440,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles:
       - DRIVER
       security:
       - bearerAuth: []
       parameters:
+      - $ref: "#/components/parameters/IdempotencyKey"
       - name: orderId
         in: path
         required: true
@@ -5262,7 +5514,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -5271,7 +5523,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -5280,7 +5532,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -5289,7 +5541,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -5298,14 +5550,19 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles:
       - MANAGER
       - ADMIN
       security:
       - bearerAuth: []
       parameters:
+      - $ref: "#/components/parameters/IdempotencyKey"
       - name: orderId
         in: path
         required: true
@@ -5375,7 +5632,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -5384,7 +5641,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -5393,7 +5650,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -5402,7 +5659,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -5411,8 +5668,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles:
       - STAFF
       - DRIVER
@@ -5446,6 +5707,8 @@ paths:
   /cod/reconciliations:
     post:
       operationId: reconcileCod
+      parameters:
+      - $ref: "#/components/parameters/IdempotencyKey"
       tags:
       - COD
       summary: Tạo phiếu đối soát COD
@@ -5481,7 +5744,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -5490,7 +5753,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -5499,7 +5762,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -5508,7 +5771,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -5517,8 +5780,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles:
       - MANAGER
       - ADMIN
@@ -5595,7 +5862,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -5604,7 +5871,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -5613,7 +5880,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -5622,7 +5889,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -5631,8 +5898,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles:
       - STAFF
       - DRIVER
@@ -5665,6 +5936,8 @@ paths:
         description: Từ khóa tìm kiếm tùy resource.
     post:
       operationId: createIncident
+      parameters:
+      - $ref: "#/components/parameters/IdempotencyKey"
       tags:
       - Incidents
       summary: Báo sự cố
@@ -5694,7 +5967,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -5703,7 +5976,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -5712,7 +5985,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -5721,7 +5994,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -5730,8 +6003,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles:
       - STAFF
       - DRIVER
@@ -5782,7 +6059,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -5791,7 +6068,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -5800,7 +6077,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -5809,7 +6086,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -5818,8 +6095,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles:
       - STAFF
       - DRIVER
@@ -5876,7 +6157,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -5885,7 +6166,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -5894,7 +6175,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -5903,7 +6184,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -5912,8 +6193,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles:
       - MANAGER
       - ADMIN
@@ -5975,7 +6260,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -5984,7 +6269,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -5993,7 +6278,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -6002,7 +6287,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -6011,8 +6296,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles:
       - MANAGER
       - ADMIN
@@ -6070,7 +6359,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -6079,7 +6368,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -6088,7 +6377,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -6097,7 +6386,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -6106,8 +6395,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles:
       - MANAGER
       - ADMIN
@@ -6162,7 +6455,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -6171,7 +6464,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -6180,7 +6473,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -6189,7 +6482,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -6198,8 +6491,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles:
       - MANAGER
       - ADMIN
@@ -6221,6 +6518,8 @@ paths:
   /media/presigned-uploads:
     post:
       operationId: createPresignedUpload
+      parameters:
+      - $ref: "#/components/parameters/IdempotencyKey"
       tags:
       - Media
       summary: Cấp URL upload ảnh/chứng từ
@@ -6254,7 +6553,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: UNAUTHENTICATED
                 message: Thiếu hoặc token không hợp lệ
         '403':
           description: Không có quyền
@@ -6263,7 +6562,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: FORBIDDEN
                 message: Không có quyền
         '404':
           description: Không tìm thấy resource
@@ -6272,7 +6571,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: NOT_FOUND
                 message: Không tìm thấy resource
         '409':
           description: Xung đột trạng thái/nghiệp vụ
@@ -6281,7 +6580,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: REQUEST_ERROR
+                code: CONFLICT
                 message: Xung đột trạng thái/nghiệp vụ
         '422':
           description: Không thể xử lý dữ liệu
@@ -6290,8 +6589,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: VALIDATION_ERROR
+                code: UNPROCESSABLE_ENTITY
                 message: Không thể xử lý dữ liệu
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
       x-roles: *id002
       security:
       - bearerAuth: []
@@ -6306,6 +6609,40 @@ paths:
               contentType: image/jpeg
               purpose: DELIVERY_PROOF
 components:
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: UUID do client; dùng lại cùng key và payload sẽ trả lại kết quả ban đầu.
+      schema:
+        type: string
+        format: uuid
+  responses:
+    RateLimited:
+      description: Vượt giới hạn tần suất; đợi số giây trong Retry-After rồi mới thử lại.
+      headers:
+        Retry-After:
+          description: Thời gian chờ trước khi gửi lại, tính bằng giây.
+          schema:
+            type: integer
+            minimum: 0
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          example:
+            code: RATE_LIMITED
+            message: Too many requests
+    InternalError:
+      description: Lỗi chưa dự kiến trên server.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          example:
+            code: INTERNAL_ERROR
+            message: Internal server error
   securitySchemes:
     bearerAuth:
       type: http
@@ -6317,6 +6654,15 @@ components:
       properties:
         code:
           type: string
+          enum:
+          - VALIDATION_ERROR
+          - UNAUTHENTICATED
+          - FORBIDDEN
+          - NOT_FOUND
+          - CONFLICT
+          - UNPROCESSABLE_ENTITY
+          - RATE_LIMITED
+          - INTERNAL_ERROR
         message:
           type: string
       additionalProperties: false
