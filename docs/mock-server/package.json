@@ -4,7 +4,8 @@
   "private": true,
   "description": "Prism mock server for the inter-provincial express delivery system",
   "scripts": {
-    "mock": "prism mock --host 0.0.0.0 --port 4010 ../openapi.yaml"
+    "mock": "prism mock --host 0.0.0.0 --port 4010 ../openapi.yaml",
+    "validate": "prism validate ../openapi.yaml"
   },
   "devDependencies": {
     "@stoplight/prism-cli": "5.14.2"

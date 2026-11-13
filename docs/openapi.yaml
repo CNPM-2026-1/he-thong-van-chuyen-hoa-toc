@@ -1372,7 +1372,7 @@ paths:
       tags:
       - Stations
       summary: Cập nhật bến
-      description: ''
+      description: Cập nhật một phần bến; các trường không gửi sẽ được giữ nguyên.
       responses:
         '200':
           description: OK
@@ -1456,7 +1456,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/StationInput'
+              $ref: '#/components/schemas/StationUpdate'
             example: *id006
     delete:
       operationId: deactivateStation
@@ -1854,7 +1854,7 @@ paths:
       tags:
       - Routes
       summary: Cập nhật tuyến
-      description: ''
+      description: Cập nhật một phần tuyến; các trường không gửi sẽ được giữ nguyên.
       responses:
         '200':
           description: OK
@@ -1938,7 +1938,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RouteInput'
+              $ref: '#/components/schemas/RouteUpdate'
             example: *id009
     delete:
       operationId: deactivateRoute
@@ -2331,7 +2331,7 @@ paths:
       tags:
       - Vehicles
       summary: Cập nhật xe
-      description: ''
+      description: Cập nhật một phần xe; các trường không gửi sẽ được giữ nguyên.
       responses:
         '200':
           description: OK
@@ -2415,7 +2415,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/VehicleInput'
+              $ref: '#/components/schemas/VehicleUpdate'
             example: *id012
     delete:
       operationId: deactivateVehicle
@@ -2806,7 +2806,7 @@ paths:
       tags:
       - Drivers
       summary: Cập nhật tài xế
-      description: ''
+      description: Cập nhật một phần thông tin tài xế; các trường không gửi sẽ được giữ nguyên.
       responses:
         '200':
           description: OK
@@ -2890,7 +2890,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/DriverInput'
+              $ref: '#/components/schemas/DriverUpdate'
             example: *id015
     delete:
       operationId: deactivateDriver
@@ -3287,7 +3287,7 @@ paths:
       tags:
       - Price Rules
       summary: Cập nhật bảng giá
-      description: ''
+      description: Cập nhật một phần bảng giá; thay đổi thời gian hiệu lực phải được kiểm tra không chồng lấn.
       responses:
         '200':
           description: OK
@@ -3371,7 +3371,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PriceRuleInput'
+              $ref: '#/components/schemas/PriceRuleUpdate'
             example: *id018
     delete:
       operationId: deactivatePriceRule
@@ -5074,7 +5074,7 @@ paths:
       tags:
       - Delivery
       summary: Yêu cầu gửi OTP cho người nhận
-      description: Không trả OTP trong response; chỉ trả thông tin đã gửi/thời hạn.
+      description: Chỉ tài xế được phân công trên chuyến hiện tại được yêu cầu gửi OTP. Không trả OTP trong response; chỉ trả thông tin đã gửi/thời hạn.
       responses:
         '200':
           description: OK
@@ -5146,8 +5146,6 @@ paths:
           $ref: '#/components/responses/InternalError'
       x-roles:
       - DRIVER
-      - STAFF
-      - MANAGER
       security:
       - bearerAuth: []
       parameters:
@@ -6833,6 +6831,7 @@ components:
           type: string
           enum: *id002
       additionalProperties: false
+      minProperties: 1
       example: *id031
     UserStatusUpdate:
       type: object
@@ -6922,6 +6921,36 @@ components:
       - address
       - province
       example: *id006
+    StationUpdate:
+      type: object
+      description: Payload cập nhật một phần; cần gửi ít nhất một trường.
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+          enum:
+          - BUS_STATION
+          - WAREHOUSE
+          - OFFICE
+        address:
+          type: string
+        province:
+          type: string
+        latitude:
+          type: number
+          minimum: -90
+        longitude:
+          type: number
+          minimum: -180
+        phone:
+          type: string
+        isActive:
+          type: boolean
+      additionalProperties: false
+      minProperties: 1
     Route:
       type: object
       properties:
@@ -6985,6 +7014,30 @@ components:
       - originStationId
       - destinationStationId
       example: *id009
+    RouteUpdate:
+      type: object
+      description: Payload cập nhật một phần; cần gửi ít nhất một trường.
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        originStationId:
+          type: string
+          format: uuid
+        destinationStationId:
+          type: string
+          format: uuid
+        distanceKm:
+          type: number
+          minimum: 0
+        estimatedDurationMinutes:
+          type: integer
+          minimum: 1
+        isActive:
+          type: boolean
+      additionalProperties: false
+      minProperties: 1
     Vehicle:
       type: object
       properties:
@@ -7053,6 +7106,34 @@ components:
       - vehicleType
       - capacityKg
       example: *id012
+    VehicleUpdate:
+      type: object
+      description: Payload cập nhật một phần; cần gửi ít nhất một trường.
+      properties:
+        plateNumber:
+          type: string
+        vehicleType:
+          type: string
+          enum:
+          - VAN
+          - TRUCK
+          - BUS
+        capacityKg:
+          type: number
+          minimum: 0
+        capacityVolumeM3:
+          type: number
+          minimum: 0
+        status:
+          type: string
+          enum:
+          - AVAILABLE
+          - IN_USE
+          - MAINTENANCE
+        isActive:
+          type: boolean
+      additionalProperties: false
+      minProperties: 1
     Driver:
       type: object
       properties:
@@ -7100,6 +7181,22 @@ components:
       - userId
       - licenseNumber
       example: *id015
+    DriverUpdate:
+      type: object
+      description: Payload cập nhật một phần; cần gửi ít nhất một trường.
+      properties:
+        userId:
+          type: string
+          format: uuid
+        licenseNumber:
+          type: string
+        defaultVehicleId:
+          type: string
+          format: uuid
+        isActive:
+          type: boolean
+      additionalProperties: false
+      minProperties: 1
     PriceRule:
       type: object
       properties:
@@ -7173,6 +7270,35 @@ components:
       - pricePerKgVnd
       - effectiveFrom
       example: *id018
+    PriceRuleUpdate:
+      type: object
+      description: Payload cập nhật một phần; cần gửi ít nhất một trường.
+      properties:
+        routeId:
+          type: string
+          format: uuid
+        baseFeeVnd:
+          type: integer
+          minimum: 0
+        pricePerKgVnd:
+          type: integer
+          minimum: 0
+        expressMultiplier:
+          type: number
+          minimum: 1
+        codFeeVnd:
+          type: integer
+          minimum: 0
+        effectiveFrom:
+          type: string
+          format: date-time
+        effectiveTo:
+          type: string
+          format: date-time
+        isActive:
+          type: boolean
+      additionalProperties: false
+      minProperties: 1
     PriceQuoteRequest:
       type: object
       properties:

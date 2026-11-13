@@ -25,6 +25,13 @@ Các file `.puml` là mã nguồn PlantUML. Có thể mở bằng PlantUML exten
 3. Backend triển khai REST trước; Socket.IO dùng cùng access token và authorization theo resource.
 4. Khi backend có endpoint thật, chuyển environment Postman từ mock URL sang API local/server và kiểm tra contract.
 
+## Kiểm tra trước khi mở PR
+
+- Chạy `npm install` rồi `npm run validate` tại `docs/mock-server` để kiểm tra OpenAPI.
+- Chạy `npm run mock` tại `docs/mock-server`, sau đó thử tối thiểu các luồng login, báo giá/tạo đơn, tiếp nhận, manifest, giao OTP và tracking bằng Postman.
+- Preview toàn bộ file `.puml`; giữ mã nguồn PlantUML trong repository cùng ảnh xuất cho báo cáo nếu cần.
+- Đối chiếu các role, phạm vi dữ liệu theo resource, enum trạng thái và schema Prisma với TV1/TV5 trước khi merge.
+
 ## Phạm vi và giả định
 
 - Các vai trò `CUSTOMER`, `STAFF`, `DRIVER`, `MANAGER`, `ADMIN`, tiền tố `/api/v1`, JSON, phân trang `{ items, page, total }`, lỗi `{ code, message }` và login `{ accessToken, refreshToken, user }` được lấy từ kế hoạch Sprint 1.

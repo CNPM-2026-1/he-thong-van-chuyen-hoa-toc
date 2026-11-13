@@ -29,6 +29,16 @@ npm run mock
 
 Base URL mock: `http://localhost:4010/api/v1`.
 
+Kiểm tra hợp đồng OpenAPI trước khi mở PR:
+
+```bash
+cd docs/mock-server
+npm install
+npm run validate
+```
+
+Các request `PATCH` trong OpenAPI là cập nhật một phần; không cần gửi lại các trường không thay đổi.
+
 ## Trước khi merge
 
 Các role, tiền tố API, envelope list/error và hình dạng login được giữ theo kế hoạch. Endpoint nghiệp vụ sau Sprint 1, enum trạng thái, quyền chi tiết và các quyết định triển khai là đề xuất thiết kế; cần TV1/TV5/nhóm trưởng review trước khi chốt.

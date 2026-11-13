@@ -87,6 +87,7 @@ Response `400`:
 - Client không tự tính giá cuối cùng; backend tính lại từ `price_rules` có hiệu lực.
 - Không cho client tự cập nhật trạng thái đơn bất kỳ. Dùng endpoint nghiệp vụ tương ứng (nhận tại quầy, điều phối chuyến, xác nhận giao hàng).
 - `DELETE` trên danh mục là xóa mềm/vô hiệu hóa; đơn/chuyến đã tham chiếu không bị mất.
+- Các request `PATCH` là cập nhật một phần: chỉ các trường có trong payload mới thay đổi; payload rỗng bị từ chối.
 - Những ví dụ ở đây là dữ liệu giả để phát triển giao diện, không phải dữ liệu thật.
 - OpenAPI bao gồm API nền tảng Sprint 1 (auth, users, danh mục) và API nghiệp vụ các sprint sau theo đúng đầu mục TV8; API sprint sau, enum, quyền và công thức dưới đây vẫn là đề xuất độc lập của TV7/TV8, không hàm ý đã được các đầu mục khác duyệt.
 - Quy tắc tính cước đề xuất: `weightKg = weightGrams / 1000`; `weightFeeVnd = ceil(weightKg * pricePerKgVnd)`; `subTotalVnd = baseFeeVnd + weightFeeVnd`; phí EXPRESS là `ceil(subTotalVnd * (expressMultiplier - 1))`, STANDARD không cộng phí này; cộng `codFeeVnd` khi `codAmountVnd > 0`. Backend tính lại tại thời điểm tạo đơn. Nếu không có đúng một bảng giá hoạt động phù hợp tuyến/thời điểm, trả `409 CONFLICT`.

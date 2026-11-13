@@ -16,6 +16,14 @@ npm install
 npm run mock
 ```
 
+Kiểm tra OpenAPI trước khi mở pull request:
+
+```bash
+npm run validate
+```
+
+Lệnh này chỉ kiểm tra hợp đồng OpenAPI; Prism mock vẫn không thực hiện nghiệp vụ hay lưu dữ liệu.
+
 Prism lắng nghe tại `http://localhost:4010`. API base URL cho Postman/mobile/web là:
 
 ```text

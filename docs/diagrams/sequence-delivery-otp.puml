@@ -17,7 +17,7 @@ App -> API : POST /api/v1/orders/{orderId}/delivery/otp
 API -> DB : Kiểm tra đơn OUT_FOR_DELIVERY
 API -> SMS : Gửi OTP tới người nhận
 SMS --> CUSTOMER : SMS chứa OTP
-API --> App : 202 OTP sent (không trả mã OTP)
+API --> App : 200 OTP sent (không trả mã OTP)
 CUSTOMER -> DRIVER : Cung cấp OTP trực tiếp
 DRIVER -> App : Nhập OTP + chọn ảnh chứng minh
 App -> API : POST /api/v1/media/presigned-uploads
