@@ -1,0 +1,87 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f5f7fa;
+}
+
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #f0f2f5;
+}
+
+.login-card {
+  width: 400px;
+  max-width: calc(100% - 32px);
+}
+
+.login-heading {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.demo-account {
+  margin-top: 25px;
+  padding: 12px;
+  background: #f5f5f5;
+  border-radius: 8px;
+}
+
+.demo-account p {
+  margin: 6px 0;
+  font-size: 13px;
+}
+
+.admin-layout {
+  min-height: 100vh;
+}
+
+.sidebar-title {
+  padding: 20px 16px 10px;
+  text-align: center;
+}
+
+.admin-header {
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  border-bottom: 1px solid #eee;
+}
+
+.admin-header h4 {
+  margin: 0;
+}
+
+.dashboard-content {
+  padding: 24px;
+}
+
+.stats-row {
+  margin-top: 24px;
+}
+
+.system-card {
+  margin-top: 24px;
+}
+
+@media (max-width: 600px) {
+  .admin-header {
+    padding: 0 12px;
+  }
+
+  .admin-header h4 {
+    font-size: 14px;
+  }
+
+  .dashboard-content {
+    padding: 12px;
+  }
+}
