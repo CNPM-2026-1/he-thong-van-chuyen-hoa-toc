@@ -1,0 +1,385 @@
+﻿/*
+    HE THONG QUAN LY GIAO HANG HOA TOC - SQL SERVER
+    Nguon: ERD_HeThongGiaoHangHoaToc.pdf
+    Ghi chu:
+    - Giữ tên bảng/cột và kiểu dữ liệu theo ERD.
+    - NN trong ERD -> NOT NULL.
+    - Các cột không có NN -> NULL.
+    - Các khóa ngoại được tạo sau khi tạo đủ bảng để tránh lỗi thứ tự phụ thuộc.
+*/
+
+CREATE DATABASE HeThongGiaoHangHoaToc;
+GO
+USE HeThongGiaoHangHoaToc;
+GO
+
+-- 1. BenXe
+CREATE TABLE BenXe (
+    MaBenXe UNIQUEIDENTIFIER NOT NULL,
+    TenBenXe NVARCHAR(150) NOT NULL,
+    DiaChi NVARCHAR(255) NOT NULL,
+    TinhThanh NVARCHAR(100) NULL,
+    SoDienThoai VARCHAR(20) NULL,
+    TrangThaiHoatDong BIT NULL,
+    CONSTRAINT PK_BenXe PRIMARY KEY (MaBenXe)
+);
+GO
+
+-- 2. Xe
+CREATE TABLE Xe (
+    MaXe UNIQUEIDENTIFIER NOT NULL,
+    BienSoXe VARCHAR(20) NOT NULL,
+    LoaiXe NVARCHAR(50) NULL,
+    TaiTrong DECIMAL(10,2) NULL,
+    TrangThai VARCHAR(20) NULL,
+    CONSTRAINT PK_Xe PRIMARY KEY (MaXe),
+    CONSTRAINT UQ_Xe_BienSoXe UNIQUE (BienSoXe)
+);
+GO
+
+-- 3. TaiKhoan
+CREATE TABLE TaiKhoan (
+    MaTaiKhoan UNIQUEIDENTIFIER NOT NULL,
+    HoTen NVARCHAR(100) NOT NULL,
+    Email VARCHAR(150) NULL,
+    SoDienThoai VARCHAR(20) NULL,
+    MatKhau NVARCHAR(255) NOT NULL,
+    VaiTro VARCHAR(20) NOT NULL,
+    TrangThaiHoatDong BIT NOT NULL,
+    NgayTao DATETIME2 NULL,
+    CONSTRAINT PK_TaiKhoan PRIMARY KEY (MaTaiKhoan)
+);
+GO
+
+-- 4. TaiXe
+CREATE TABLE TaiXe (
+    MaTaiXe UNIQUEIDENTIFIER NOT NULL,
+    MaTaiKhoan UNIQUEIDENTIFIER NOT NULL,
+    SoGiayPhepLaiXe VARCHAR(50) NOT NULL,
+    HangBang VARCHAR(20) NULL,
+    TrangThai VARCHAR(20) NULL,
+    MaXeMacDinh UNIQUEIDENTIFIER NULL,
+    CONSTRAINT PK_TaiXe PRIMARY KEY (MaTaiXe),
+    CONSTRAINT UQ_TaiXe_MaTaiKhoan UNIQUE (MaTaiKhoan),
+    CONSTRAINT UQ_TaiXe_SoGiayPhepLaiXe UNIQUE (SoGiayPhepLaiXe)
+);
+GO
+
+-- 5. TuyenDuong
+CREATE TABLE TuyenDuong (
+    MaTuyenDuong UNIQUEIDENTIFIER NOT NULL,
+    MaBenDi UNIQUEIDENTIFIER NOT NULL,
+    MaBenDen UNIQUEIDENTIFIER NOT NULL,
+    ThoiGianDuKien INT NULL,
+    KhoangCach DECIMAL(10,2) NULL,
+    TrangThaiHoatDong BIT NULL,
+    CONSTRAINT PK_TuyenDuong PRIMARY KEY (MaTuyenDuong)
+);
+GO
+
+-- 6. BangGia
+CREATE TABLE BangGia (
+    MaBangGia UNIQUEIDENTIFIER NOT NULL,
+    MaTuyenDuong UNIQUEIDENTIFIER NOT NULL,
+    PhiCoBan DECIMAL(18,2) NOT NULL,
+    DonGiaMoiKg DECIMAL(18,2) NOT NULL,
+    HeSoHoaToc DECIMAL(5,2) NULL,
+    PhiCOD DECIMAL(18,2) NULL,
+    NgayApDungTu DATE NULL,
+    NgayApDungDen DATE NULL,
+    CONSTRAINT PK_BangGia PRIMARY KEY (MaBangGia)
+);
+GO
+
+-- 7. DonHang
+CREATE TABLE DonHang (
+    MaDonHang UNIQUEIDENTIFIER NOT NULL,
+    MaDon VARCHAR(30) NOT NULL,
+    MaKhachHang UNIQUEIDENTIFIER NOT NULL,
+    MaTuyenDuong UNIQUEIDENTIFIER NOT NULL,
+    MaBangGia UNIQUEIDENTIFIER NULL,
+    TenNguoiGui NVARCHAR(100) NOT NULL,
+    SDTNguoiGui VARCHAR(20) NOT NULL,
+    DiaChiNguoiGui NVARCHAR(255) NOT NULL,
+    TenNguoiNhan NVARCHAR(100) NOT NULL,
+    SDTNguoiNhan VARCHAR(20) NOT NULL,
+    DiaChiNguoiNhan NVARCHAR(255) NOT NULL,
+    LoaiDichVu VARCHAR(30) NULL,
+    TongCuoc DECIMAL(18,2) NULL,
+    TienCOD DECIMAL(18,2) NULL,
+    TrangThai VARCHAR(30) NOT NULL,
+    NgayTao DATETIME2 NULL,
+    CONSTRAINT PK_DonHang PRIMARY KEY (MaDonHang),
+    CONSTRAINT UQ_DonHang_MaDon UNIQUE (MaDon)
+);
+GO
+
+-- 8. ChuyenXe
+CREATE TABLE ChuyenXe (
+    MaChuyenXe UNIQUEIDENTIFIER NOT NULL,
+    MaTuyenDuong UNIQUEIDENTIFIER NOT NULL,
+    MaXe UNIQUEIDENTIFIER NOT NULL,
+    MaTaiXe UNIQUEIDENTIFIER NOT NULL,
+    ThoiGianKhoiHanh DATETIME2 NULL,
+    ThoiGianDenDuKien DATETIME2 NULL,
+    TrangThai VARCHAR(30) NULL,
+    CONSTRAINT PK_ChuyenXe PRIMARY KEY (MaChuyenXe)
+);
+GO
+
+-- 9. PhieuKeHang
+CREATE TABLE PhieuKeHang (
+    MaPhieuKe UNIQUEIDENTIFIER NOT NULL,
+    MaChuyenXe UNIQUEIDENTIFIER NOT NULL,
+    MaPhieu VARCHAR(30) NULL,
+    NguoiTao UNIQUEIDENTIFIER NULL,
+    NgayTao DATETIME2 NULL,
+    TrangThai VARCHAR(20) NULL,
+    CONSTRAINT PK_PhieuKeHang PRIMARY KEY (MaPhieuKe)
+);
+GO
+
+-- 10. KienHang
+CREATE TABLE KienHang (
+    MaKienHang UNIQUEIDENTIFIER NOT NULL,
+    MaDonHang UNIQUEIDENTIFIER NOT NULL,
+    MaKien VARCHAR(30) NULL,
+    MoTa NVARCHAR(255) NULL,
+    KhoiLuong DECIMAL(10,2) NOT NULL,
+    ChieuDai DECIMAL(10,2) NULL,
+    ChieuRong DECIMAL(10,2) NULL,
+    ChieuCao DECIMAL(10,2) NULL,
+    MaQR VARCHAR(255) NULL,
+    CONSTRAINT PK_KienHang PRIMARY KEY (MaKienHang)
+);
+GO
+
+-- 11. ChiTietPhieuKe
+CREATE TABLE ChiTietPhieuKe (
+    MaChiTiet UNIQUEIDENTIFIER NOT NULL,
+    MaPhieuKe UNIQUEIDENTIFIER NOT NULL,
+    MaKienHang UNIQUEIDENTIFIER NOT NULL,
+    ThoiGianXep DATETIME2 NULL,
+    ThoiGianDo DATETIME2 NULL,
+    CONSTRAINT PK_ChiTietPhieuKe PRIMARY KEY (MaChiTiet),
+    CONSTRAINT UQ_ChiTietPhieuKe_Phieu_Kien UNIQUE (MaPhieuKe, MaKienHang)
+);
+GO
+
+-- 12. LichSuTrangThai
+CREATE TABLE LichSuTrangThai (
+    MaLichSu UNIQUEIDENTIFIER NOT NULL,
+    MaDonHang UNIQUEIDENTIFIER NOT NULL,
+    NguoiCapNhat UNIQUEIDENTIFIER NULL,
+    TrangThaiCu VARCHAR(30) NULL,
+    TrangThaiMoi VARCHAR(30) NOT NULL,
+    GhiChu NVARCHAR(255) NULL,
+    ThoiGianCapNhat DATETIME2 NULL,
+    CONSTRAINT PK_LichSuTrangThai PRIMARY KEY (MaLichSu)
+);
+GO
+
+-- 13. ViTriXe
+CREATE TABLE ViTriXe (
+    MaViTri UNIQUEIDENTIFIER NOT NULL,
+    MaXe UNIQUEIDENTIFIER NOT NULL,
+    MaChuyenXe UNIQUEIDENTIFIER NOT NULL,
+    ViDo DECIMAL(10,7) NOT NULL,
+    KinhDo DECIMAL(10,7) NOT NULL,
+    ThoiGianGhiNhan DATETIME2 NOT NULL,
+    CONSTRAINT PK_ViTriXe PRIMARY KEY (MaViTri)
+);
+GO
+
+-- 14. GiaoHang
+CREATE TABLE GiaoHang (
+    MaGiaoHang UNIQUEIDENTIFIER NOT NULL,
+    MaDonHang UNIQUEIDENTIFIER NOT NULL,
+    MaTaiXe UNIQUEIDENTIFIER NULL,
+    TenNguoiNhanThucTe NVARCHAR(100) NULL,
+    SDTNguoiNhanThucTe VARCHAR(20) NULL,
+    TrangThaiGiao VARCHAR(30) NULL,
+    XacThucOTP BIT NULL,
+    AnhMinhChung VARCHAR(255) NULL,
+    ThoiGianGiao DATETIME2 NULL,
+    GhiChu NVARCHAR(255) NULL,
+    CONSTRAINT PK_GiaoHang PRIMARY KEY (MaGiaoHang)
+);
+GO
+
+-- 15. GiaoDichCOD
+CREATE TABLE GiaoDichCOD (
+    MaGiaoDich UNIQUEIDENTIFIER NOT NULL,
+    MaDonHang UNIQUEIDENTIFIER NOT NULL,
+    MaTaiXeThu UNIQUEIDENTIFIER NULL,
+    MaTaiKhoanNhan UNIQUEIDENTIFIER NULL,
+    SoTien DECIMAL(18,2) NOT NULL,
+    LoaiGiaoDich VARCHAR(30) NULL,
+    TrangThai VARCHAR(30) NULL,
+    ThoiGianGiaoDich DATETIME2 NULL,
+    CONSTRAINT PK_GiaoDichCOD PRIMARY KEY (MaGiaoDich)
+);
+GO
+
+-- 16. SuCo
+CREATE TABLE SuCo (
+    MaSuCo UNIQUEIDENTIFIER NOT NULL,
+    MaDonHang UNIQUEIDENTIFIER NULL,
+    MaChuyenXe UNIQUEIDENTIFIER NULL,
+    NguoiBaoCao UNIQUEIDENTIFIER NULL,
+    LoaiSuCo VARCHAR(50) NULL,
+    MoTa NVARCHAR(MAX) NULL,
+    TrangThai VARCHAR(30) NULL,
+    ThoiGianBaoCao DATETIME2 NULL,
+    ThoiGianXuLy DATETIME2 NULL,
+    CONSTRAINT PK_SuCo PRIMARY KEY (MaSuCo)
+);
+GO
+
+-- 17. ThongBao
+CREATE TABLE ThongBao (
+    MaThongBao UNIQUEIDENTIFIER NOT NULL,
+    MaTaiKhoan UNIQUEIDENTIFIER NOT NULL,
+    MaDonHang UNIQUEIDENTIFIER NULL,
+    TieuDe NVARCHAR(150) NOT NULL,
+    NoiDung NVARCHAR(MAX) NULL,
+    DaDoc BIT NULL,
+    NgayTao DATETIME2 NULL,
+    CONSTRAINT PK_ThongBao PRIMARY KEY (MaThongBao)
+);
+GO
+
+/* ===================== KHOA NGOAI ===================== */
+
+ALTER TABLE TaiXe
+ADD CONSTRAINT FK_TaiXe_TaiKhoan
+FOREIGN KEY (MaTaiKhoan) REFERENCES TaiKhoan(MaTaiKhoan);
+
+ALTER TABLE TaiXe
+ADD CONSTRAINT FK_TaiXe_XeMacDinh
+FOREIGN KEY (MaXeMacDinh) REFERENCES Xe(MaXe);
+
+ALTER TABLE TuyenDuong
+ADD CONSTRAINT FK_TuyenDuong_BenDi
+FOREIGN KEY (MaBenDi) REFERENCES BenXe(MaBenXe);
+
+ALTER TABLE TuyenDuong
+ADD CONSTRAINT FK_TuyenDuong_BenDen
+FOREIGN KEY (MaBenDen) REFERENCES BenXe(MaBenXe);
+
+ALTER TABLE BangGia
+ADD CONSTRAINT FK_BangGia_TuyenDuong
+FOREIGN KEY (MaTuyenDuong) REFERENCES TuyenDuong(MaTuyenDuong);
+
+ALTER TABLE DonHang
+ADD CONSTRAINT FK_DonHang_TaiKhoan
+FOREIGN KEY (MaKhachHang) REFERENCES TaiKhoan(MaTaiKhoan);
+
+ALTER TABLE DonHang
+ADD CONSTRAINT FK_DonHang_TuyenDuong
+FOREIGN KEY (MaTuyenDuong) REFERENCES TuyenDuong(MaTuyenDuong);
+
+ALTER TABLE DonHang
+ADD CONSTRAINT FK_DonHang_BangGia
+FOREIGN KEY (MaBangGia) REFERENCES BangGia(MaBangGia);
+
+ALTER TABLE ChuyenXe
+ADD CONSTRAINT FK_ChuyenXe_TuyenDuong
+FOREIGN KEY (MaTuyenDuong) REFERENCES TuyenDuong(MaTuyenDuong);
+
+ALTER TABLE ChuyenXe
+ADD CONSTRAINT FK_ChuyenXe_Xe
+FOREIGN KEY (MaXe) REFERENCES Xe(MaXe);
+
+ALTER TABLE ChuyenXe
+ADD CONSTRAINT FK_ChuyenXe_TaiXe
+FOREIGN KEY (MaTaiXe) REFERENCES TaiXe(MaTaiXe);
+
+ALTER TABLE PhieuKeHang
+ADD CONSTRAINT FK_PhieuKeHang_ChuyenXe
+FOREIGN KEY (MaChuyenXe) REFERENCES ChuyenXe(MaChuyenXe);
+
+ALTER TABLE PhieuKeHang
+ADD CONSTRAINT FK_PhieuKeHang_NguoiTao
+FOREIGN KEY (NguoiTao) REFERENCES TaiKhoan(MaTaiKhoan);
+
+ALTER TABLE KienHang
+ADD CONSTRAINT FK_KienHang_DonHang
+FOREIGN KEY (MaDonHang) REFERENCES DonHang(MaDonHang);
+
+ALTER TABLE ChiTietPhieuKe
+ADD CONSTRAINT FK_ChiTietPhieuKe_PhieuKe
+FOREIGN KEY (MaPhieuKe) REFERENCES PhieuKeHang(MaPhieuKe);
+
+ALTER TABLE ChiTietPhieuKe
+ADD CONSTRAINT FK_ChiTietPhieuKe_KienHang
+FOREIGN KEY (MaKienHang) REFERENCES KienHang(MaKienHang);
+
+ALTER TABLE LichSuTrangThai
+ADD CONSTRAINT FK_LichSuTrangThai_DonHang
+FOREIGN KEY (MaDonHang) REFERENCES DonHang(MaDonHang);
+
+ALTER TABLE LichSuTrangThai
+ADD CONSTRAINT FK_LichSuTrangThai_NguoiCapNhat
+FOREIGN KEY (NguoiCapNhat) REFERENCES TaiKhoan(MaTaiKhoan);
+
+ALTER TABLE ViTriXe
+ADD CONSTRAINT FK_ViTriXe_Xe
+FOREIGN KEY (MaXe) REFERENCES Xe(MaXe);
+
+ALTER TABLE ViTriXe
+ADD CONSTRAINT FK_ViTriXe_ChuyenXe
+FOREIGN KEY (MaChuyenXe) REFERENCES ChuyenXe(MaChuyenXe);
+
+ALTER TABLE GiaoHang
+ADD CONSTRAINT FK_GiaoHang_DonHang
+FOREIGN KEY (MaDonHang) REFERENCES DonHang(MaDonHang);
+
+ALTER TABLE GiaoHang
+ADD CONSTRAINT FK_GiaoHang_TaiXe
+FOREIGN KEY (MaTaiXe) REFERENCES TaiXe(MaTaiXe);
+
+ALTER TABLE GiaoDichCOD
+ADD CONSTRAINT FK_GiaoDichCOD_DonHang
+FOREIGN KEY (MaDonHang) REFERENCES DonHang(MaDonHang);
+
+ALTER TABLE GiaoDichCOD
+ADD CONSTRAINT FK_GiaoDichCOD_TaiXeThu
+FOREIGN KEY (MaTaiXeThu) REFERENCES TaiXe(MaTaiXe);
+
+ALTER TABLE GiaoDichCOD
+ADD CONSTRAINT FK_GiaoDichCOD_TaiKhoanNhan
+FOREIGN KEY (MaTaiKhoanNhan) REFERENCES TaiKhoan(MaTaiKhoan);
+
+ALTER TABLE SuCo
+ADD CONSTRAINT FK_SuCo_DonHang
+FOREIGN KEY (MaDonHang) REFERENCES DonHang(MaDonHang);
+
+ALTER TABLE SuCo
+ADD CONSTRAINT FK_SuCo_ChuyenXe
+FOREIGN KEY (MaChuyenXe) REFERENCES ChuyenXe(MaChuyenXe);
+
+ALTER TABLE SuCo
+ADD CONSTRAINT FK_SuCo_NguoiBaoCao
+FOREIGN KEY (NguoiBaoCao) REFERENCES TaiKhoan(MaTaiKhoan);
+
+ALTER TABLE ThongBao
+ADD CONSTRAINT FK_ThongBao_TaiKhoan
+FOREIGN KEY (MaTaiKhoan) REFERENCES TaiKhoan(MaTaiKhoan);
+
+ALTER TABLE ThongBao
+ADD CONSTRAINT FK_ThongBao_DonHang
+FOREIGN KEY (MaDonHang) REFERENCES DonHang(MaDonHang);
+GO
+
+/* ===================== GOI Y INDEX ===================== */
+CREATE UNIQUE INDEX UX_TaiKhoan_Email_NotNull ON TaiKhoan(Email) WHERE Email IS NOT NULL;
+CREATE UNIQUE INDEX UX_PhieuKeHang_MaPhieu_NotNull ON PhieuKeHang(MaPhieu) WHERE MaPhieu IS NOT NULL;
+CREATE UNIQUE INDEX UX_KienHang_MaKien_NotNull ON KienHang(MaKien) WHERE MaKien IS NOT NULL;
+CREATE UNIQUE INDEX UX_KienHang_MaQR_NotNull ON KienHang(MaQR) WHERE MaQR IS NOT NULL;
+CREATE INDEX IX_DonHang_MaKhachHang ON DonHang(MaKhachHang);
+CREATE INDEX IX_DonHang_TrangThai ON DonHang(TrangThai);
+CREATE INDEX IX_ChuyenXe_ThoiGianKhoiHanh ON ChuyenXe(ThoiGianKhoiHanh);
+CREATE INDEX IX_ViTriXe_MaChuyenXe_ThoiGian ON ViTriXe(MaChuyenXe, ThoiGianGhiNhan);
+CREATE INDEX IX_LichSuTrangThai_MaDonHang_ThoiGian ON LichSuTrangThai(MaDonHang, ThoiGianCapNhat);
+GO
