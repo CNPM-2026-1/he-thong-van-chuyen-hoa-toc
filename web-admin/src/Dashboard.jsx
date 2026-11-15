@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   Layout,
   Menu,
@@ -12,15 +13,17 @@ import {
 import {
   DashboardOutlined,
   UserOutlined,
-  CarOutlined,
-  EnvironmentOutlined,
   LogoutOutlined
 } from "@ant-design/icons";
+
+import { catalogPages, catalogMenuItems } from "./pages/catalog";
 
 const { Header, Sider, Content } = Layout;
 const { Title, Text } = Typography;
 
 export default function Dashboard({ user, onLogout }) {
+  const [selectedKey, setSelectedKey] = useState("dashboard");
+
   const menuItems = [
     {
       key: "dashboard",
@@ -33,16 +36,14 @@ export default function Dashboard({ user, onLogout }) {
       label: "Quản lý tài khoản"
     },
     {
-      key: "vehicles",
-      icon: <CarOutlined />,
-      label: "Quản lý phương tiện"
-    },
-    {
-      key: "routes",
-      icon: <EnvironmentOutlined />,
-      label: "Quản lý tuyến đường"
+      type: "group",
+      label: "Danh mục",
+      children: catalogMenuItems
     }
   ];
+
+  // Trang danh mục (TV4). Các mục khác (dashboard, accounts) vẫn hiện nội dung tổng quan.
+  const catalogPage = catalogPages[selectedKey];
 
   return (
     <Layout className="admin-layout">
@@ -53,7 +54,8 @@ export default function Dashboard({ user, onLogout }) {
 
         <Menu
           mode="inline"
-          defaultSelectedKeys={["dashboard"]}
+          selectedKeys={[selectedKey]}
+          onClick={({ key }) => setSelectedKey(key)}
           items={menuItems}
         />
       </Sider>
@@ -76,47 +78,53 @@ export default function Dashboard({ user, onLogout }) {
         </Header>
 
         <Content className="dashboard-content">
-          <Title level={3}>Dashboard</Title>
-          <Text type="secondary">
-            Tổng quan hoạt động của hệ thống
-          </Text>
+          {catalogPage ? (
+            catalogPage.element
+          ) : (
+            <>
+              <Title level={3}>Dashboard</Title>
+              <Text type="secondary">
+                Tổng quan hoạt động của hệ thống
+              </Text>
 
-          <Row gutter={[16, 16]} className="stats-row">
-            <Col xs={24} sm={12} lg={6}>
-              <Card>
-                <Text type="secondary">Tổng tài khoản</Text>
-                <Title level={2}>120</Title>
+              <Row gutter={[16, 16]} className="stats-row">
+                <Col xs={24} sm={12} lg={6}>
+                  <Card>
+                    <Text type="secondary">Tổng tài khoản</Text>
+                    <Title level={2}>120</Title>
+                  </Card>
+                </Col>
+
+                <Col xs={24} sm={12} lg={6}>
+                  <Card>
+                    <Text type="secondary">Tổng tài xế</Text>
+                    <Title level={2}>45</Title>
+                  </Card>
+                </Col>
+
+                <Col xs={24} sm={12} lg={6}>
+                  <Card>
+                    <Text type="secondary">Phương tiện</Text>
+                    <Title level={2}>32</Title>
+                  </Card>
+                </Col>
+
+                <Col xs={24} sm={12} lg={6}>
+                  <Card>
+                    <Text type="secondary">Tuyến đường</Text>
+                    <Title level={2}>18</Title>
+                  </Card>
+                </Col>
+              </Row>
+
+              <Card title="Thông tin hệ thống" className="system-card">
+                <p>Chào mừng bạn đến với hệ thống quản lý vận chuyển.</p>
+                <p>Tài khoản: {user.email}</p>
+                <p>Vai trò: {user.role}</p>
+                <p>Trạng thái: Đang hoạt động</p>
               </Card>
-            </Col>
-
-            <Col xs={24} sm={12} lg={6}>
-              <Card>
-                <Text type="secondary">Tổng tài xế</Text>
-                <Title level={2}>45</Title>
-              </Card>
-            </Col>
-
-            <Col xs={24} sm={12} lg={6}>
-              <Card>
-                <Text type="secondary">Phương tiện</Text>
-                <Title level={2}>32</Title>
-              </Card>
-            </Col>
-
-            <Col xs={24} sm={12} lg={6}>
-              <Card>
-                <Text type="secondary">Tuyến đường</Text>
-                <Title level={2}>18</Title>
-              </Card>
-            </Col>
-          </Row>
-
-          <Card title="Thông tin hệ thống" className="system-card">
-            <p>Chào mừng bạn đến với hệ thống quản lý vận chuyển.</p>
-            <p>Tài khoản: {user.email}</p>
-            <p>Vai trò: {user.role}</p>
-            <p>Trạng thái: Đang hoạt động</p>
-          </Card>
+            </>
+          )}
         </Content>
       </Layout>
     </Layout>
