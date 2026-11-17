@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VietLogix — TV6 Design System, Mobile UI & Interactive Prototype</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div id="app-shell">
+    <!-- Top Workspace Header -->
+    <header class="workspace-header">
+      <div class="brand-cluster">
+        <div class="brand-mark" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16.5 9.4 7.55 4.24" />
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+            <polyline points="3.29 7 12 12 20.71 7" />
+            <line x1="12" y1="22" x2="12" y2="12" />
+          </svg>
+        </div>
+        <div>
+          <div class="brand-title-row">
+            <span class="brand-name">VietLogix UI</span>
+            <span class="badge-pill badge-pill--brand">TV6 Deliverable</span>
+          </div>
+          <p class="brand-subtitle">Design System • App Khách • App Nhân viên / Tài xế • Prototype</p>
+        </div>
+      </div>
+
+      <nav class="mode-tabs" role="tablist" aria-label="Chế độ xem TV6">
+        <button class="mode-tab active" data-mode="design-system" role="tab" aria-selected="true">
+          <span class="tab-dot"></span>
+          Bộ thiết kế chung
+        </button>
+        <button class="mode-tab" data-mode="customer-app" role="tab" aria-selected="false">
+          App Khách (CUSTOMER)
+        </button>
+        <button class="mode-tab" data-mode="ops-app" role="tab" aria-selected="false">
+          App NV / Tài xế
+        </button>
+        <button class="mode-tab" data-mode="prototype" role="tab" aria-selected="false">
+          Prototype (3 Luồng)
+        </button>
+      </nav>
+
+      <div class="header-actions">
+        <button id="btn-reset-demo" class="btn btn-outline btn-sm" title="Khôi phục dữ liệu mẫu ban đầu">
+          Reset dữ liệu mẫu
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Workspace Viewport -->
+    <main id="workspace-main" class="workspace-main"></main>
+  </div>
+
+  <!-- Toast notification container -->
+  <div id="toast-root" class="toast-root" aria-live="polite"></div>
+
+  <script src="./app.js"></script>
+</body>
+</html>
