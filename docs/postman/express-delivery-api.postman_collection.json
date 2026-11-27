@@ -2755,14 +2755,14 @@
               ],
               "path": [
                 "orders",
-                "{{orderId}}",
+                ":orderId",
                 "delivery",
                 "retry"
               ],
               "variable": [
                 {
                   "key": "orderId",
-                  "value": "{{orderId}}"
+                  "value": "99999999-9999-4999-8999-999999999999"
                 }
               ]
             },
@@ -2814,14 +2814,14 @@
               ],
               "path": [
                 "orders",
-                "{{orderId}}",
+                ":orderId",
                 "return",
                 "complete"
               ],
               "variable": [
                 {
                   "key": "orderId",
-                  "value": "{{orderId}}"
+                  "value": "99999999-9999-4999-8999-999999999999"
                 }
               ]
             },
