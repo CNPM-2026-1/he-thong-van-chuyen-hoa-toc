@@ -461,7 +461,7 @@ export class TripsService {
         'Chưa có dữ liệu phân công nhân viên theo bến; tạm thời không thể giới hạn danh sách chuyến an toàn',
       );
     }
-    if (![Role.DRIVER, Role.MANAGER, Role.ADMIN].includes(user.role)) {
+    if (user.role !== Role.DRIVER && user.role !== Role.MANAGER && user.role !== Role.ADMIN) {
       throw ApiException.forbidden('FORBIDDEN', 'Bạn không có quyền xem chuyến xe');
     }
   }
