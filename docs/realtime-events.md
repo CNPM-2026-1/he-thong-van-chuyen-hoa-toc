@@ -51,8 +51,11 @@ const socket = io(API_BASE_URL, {
 | Event | Khi phát | Payload `data` |
 |---|---|---|
 | `order:status_changed` | Đơn đổi trạng thái sau khi transaction thành công | `orderId`, `trackingCode`, `fromStatus`, `toStatus`, `actorId`, `stationId?`, `reason?` |
-| `trip:location_updated` | Có tọa độ mới hợp lệ từ tài xế | `tripId`, `vehicleId`, `driverId`, `latitude`, `longitude`, `speedKph?`, `headingDegrees?`, `recordedAt` |
-| `manifest:item_scanned` | Kiện được scan khi xếp/dỡ chuyến | `tripId`, `manifestItemId`, `orderId`, `trackingCode`, `action` (`LOADED`/`UNLOADED`), `scannedBy`, `scannedAt` |
+| `trip:location_updated` | Có tọa độ mới hợp lệ từ tài xế, sau khi backend lưu GPS | `tripId`, `vehicleId`, `driverId`, `latitude`, `longitude`, `speedKph?`, `headingDegrees?`, `recordedAt` |
+| `trip:status_changed` | Chuyến xe chuyển trạng thái hợp lệ | `tripId`, `status`, `actorId`, `changedAt` |
+| `manifest:updated` | Đơn được thêm kiện vào manifest | `tripId`, `manifestId`, `addedCount` |
+| `cod:reconciled` | COD của chuyến được đối soát | `reconciliationId`, `tripId`, `expectedAmountVnd`, `countedAmountVnd`, `differenceVnd`, `status` |
+| `manifest:item_scanned` | Kiện được scan khi xếp/dỡ chuyến | `tripId`, `manifestItemId`, `orderId`, `trackingCode`, `packageId`, `packageCode`, `action` (`LOADED`/`UNLOADED`/`MISSING`/`DAMAGED`), `scannedBy`, `scannedAt` |
 | `delivery:completed` | Xác nhận OTP và giao hàng thành công | `orderId`, `trackingCode`, `deliveredAt`, `recipientName`, `codCollectedVnd` |
 | `incident:created` | Sự cố được tạo | `incidentId`, `orderId?`, `tripId?`, `type`, `severity`, `reportedBy`, `createdAt` |
 | `incident:updated` | Sự cố đổi trạng thái/được xử lý | `incidentId`, `status`, `resolution?`, `updatedAt`, `updatedBy` |
@@ -121,3 +124,22 @@ Client không phát `order:status_changed`, `trip:location_updated` hay `deliver
 - Không đưa OTP vào event; chỉ thông báo OTP đã gửi hoặc giao hàng hoàn tất.
 - Giới hạn tần suất cập nhật vị trí, kiểm tra quyền DRIVER và trip được phân công.
 - Với nhiều backend instance, dùng Socket.IO adapter (ví dụ Redis) để đồng bộ room/event; local một instance chưa cần Redis.
+
+
+## 7. Sự kiện đã nối với backend Sprint 2
+
+- `trip:location_updated`: phát sau khi `POST /trips/{tripId}/locations` lưu thành công; không phát trực tiếp từ client.
+- `trip:status_changed`: phát sau khi trạng thái chuyến và lịch sử được commit.
+- `manifest:updated`: phát sau khi backend thêm tất cả Package thuộc một Order vào manifest.
+- `manifest:item_scanned`: phát sau khi trạng thái một kiện được cập nhật; `action` có thể là LOADED, UNLOADED, MISSING hoặc DAMAGED.
+- `delivery:completed`, `order:status_changed`: phát sau khi OTP được xác thực, lần giao và trạng thái đơn đã được lưu.
+- `incident:created`, `incident:updated`: phát khi sự cố được tạo hoặc cập nhật.
+- `cod:reconciled`: phát khi tạo phiếu đối soát COD.
+- `notification:new`: phát vào room `user:{userId}` sau khi notification đã được lưu.
+
+## 8. Lưu ý về quyền truy cập hiện tại
+
+- DRIVER chỉ được join room của chuyến đang được phân công; order room chỉ khi đơn có kiện trong manifest của chuyến được phân công.
+- CUSTOMER chỉ được join trip room để xem vị trí khi có đơn của chính mình trên chuyến ở trạng thái IN_TRANSIT; API REST cũng áp dụng điều kiện này.
+- STAFF chưa được join các room vận hành vì schema hiện tại chưa có bảng phân công nhân viên theo bến. Cần bổ sung quan hệ đó trước khi mở quyền.
+- MANAGER/ADMIN được quyền xem các room vận hành theo chính sách backend.
