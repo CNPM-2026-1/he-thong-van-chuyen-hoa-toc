@@ -53,6 +53,39 @@ const PRICE_RULES = [
   { id: '8b8b8b8b-8b8b-48b8-88b8-8b8b8b8b8b8b', routeId: '36363636-3636-4363-8363-363636363636', baseFeeVnd: 25000, pricePerKgVnd: 10000, expressMultiplier: 1.5, codFeeVnd: 10000, effectiveFrom: new Date('2026-11-01T00:00:00Z'), effectiveTo: null },
 ];
 
+ 
+// Demo order and package for Sprint 2 manifest/delivery testing.
+// Bộ 1 should create the same Package rows when implementing POST /orders.
+const ORDERS = [
+  {
+    id: '99999999-9999-4999-8999-999999999999',
+    trackingCode: 'HT202611110001',
+    customerId: '11111111-1111-4111-8111-111111111111',
+    recipientName: 'Tran Thi D',
+    recipientPhone: '0900000004',
+    originStationId: '22222222-2222-4222-8222-222222222222',
+    destinationStationId: '44444444-4444-4444-8444-444444444444',
+    description: 'Tai nghe khong day',
+    packageCount: 1,
+    weightGrams: 2000,
+    serviceLevel: 'EXPRESS',
+    codAmountVnd: 500000,
+    shippingFeeVnd: 91000,
+    status: 'RECEIVED',
+  },
+] as const;
+
+const PACKAGES = [
+  {
+    id: 'aaaaaaaa-bbbb-4aaa-8aaa-aaaaaaaaaaaa',
+    orderId: '99999999-9999-4999-8999-999999999999',
+    packageCode: 'PK-HT202611110001-01',
+    qrCode: 'QR-HT202611110001-01',
+    description: 'Tai nghe khong day',
+    weightGrams: 2000,
+  },
+];
+
 async function main() {
   const passwordHash = await bcrypt.hash(PASSWORD, 10);
   for (const u of USERS) {
@@ -63,8 +96,22 @@ async function main() {
   for (const v of VEHICLES) await prisma.vehicle.upsert({ where: { id: v.id }, update: v, create: v });
   for (const d of DRIVERS) await prisma.driver.upsert({ where: { id: d.id }, update: d, create: d });
   for (const p of PRICE_RULES) await prisma.priceRule.upsert({ where: { id: p.id }, update: p, create: p });
+  for (const order of ORDERS) {
+    await prisma.order.upsert({
+      where: { id: order.id },
+      update: order,
+      create: order,
+    });
+  }
+  for (const pkg of PACKAGES) {
+    await prisma.package.upsert({
+      where: { packageCode: pkg.packageCode },
+      update: pkg,
+      create: pkg,
+    });
+  }
 
-  console.log('Seed xong. Tài khoản mẫu (mật khẩu: %s):', PASSWORD);
+  console.log('Seed xong: tài khoản, danh mục, 1 đơn mẫu và kiện mẫu (mật khẩu: %s):', PASSWORD);
   console.table(USERS.map(({ email, phone, role }) => ({ role, email, phone })));
 }
 
