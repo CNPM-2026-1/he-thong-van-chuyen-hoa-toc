@@ -176,8 +176,12 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
       if (user.role === Role.CUSTOMER) {
         const linkedOrder = await this.prisma.manifestItem.findFirst({
           where: {
-            manifest: { tripId: trip.id },
-            package: { order: { customerId: user.id, status: 'IN_TRANSIT' } },
+            manifest: { is: { tripId: trip.id } },
+            package: {
+              is: {
+                order: { is: { customerId: user.id, status: 'IN_TRANSIT' } },
+              },
+            },
           },
           select: { id: true },
         });
@@ -198,8 +202,8 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
       if (!driver) return false;
       const assignedItem = await this.prisma.manifestItem.findFirst({
         where: {
-          package: { orderId: order.id },
-          manifest: { trip: { driverId: driver.id } },
+          package: { is: { orderId: order.id } },
+          manifest: { is: { trip: { is: { driverId: driver.id } } } },
         },
         select: { id: true },
       });
