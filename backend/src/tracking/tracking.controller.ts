@@ -30,7 +30,7 @@ export class TrackingController {
   }
 
   @Get(':tripId/locations/latest')
-  @Roles(Role.STAFF, Role.DRIVER, Role.MANAGER, Role.ADMIN, Role.CUSTOMER)
+  @Roles(Role.DRIVER, Role.MANAGER, Role.ADMIN, Role.CUSTOMER)
   @ApiOperation({ summary: 'Lấy vị trí mới nhất của chuyến' })
   getLatestLocation(
     @Param('tripId', ParseUUIDPipe) tripId: string,
