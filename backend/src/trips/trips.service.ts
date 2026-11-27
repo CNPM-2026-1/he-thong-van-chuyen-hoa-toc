@@ -226,7 +226,27 @@ export class TripsService {
         });
 
         if (dto.status === TripStatus.DISPATCHED) {
-          const vehicle = await tx.vehicle.findUnique({ where: { id: trip.vehicleId } });
+          const [vehicle, driver, driverBusyTrips] = await Promise.all([
+            tx.vehicle.findUnique({ where: { id: trip.vehicleId } }),
+            tx.driver.findFirst({
+              where: {
+                id: trip.driverId,
+                deletedAt: null,
+                isActive: true,
+                user: { deletedAt: null, status: 'ACTIVE' },
+              },
+            }),
+            tx.trip.count({
+              where: {
+                id: { not: trip.id },
+                driverId: trip.driverId,
+                OR: [
+                  { status: { in: [TripStatus.DISPATCHED, TripStatus.IN_TRANSIT, TripStatus.ARRIVED] } },
+                  { status: TripStatus.BOARDING, plannedDepartureAt: { lte: now } },
+                ],
+              },
+            }),
+          ]);
           if (
             !vehicle ||
             vehicle.deletedAt ||
@@ -236,6 +256,12 @@ export class TripsService {
             throw ApiException.conflict(
               'VEHICLE_UNAVAILABLE',
               'Xe không còn ở trạng thái sẵn sàng để xuất bến',
+            );
+          }
+          if (!driver || driverBusyTrips > 0) {
+            throw ApiException.conflict(
+              'DRIVER_UNAVAILABLE',
+              'Tài xế không còn hoạt động hoặc đang thực hiện chuyến xe khác',
             );
           }
           await tx.vehicle.update({
