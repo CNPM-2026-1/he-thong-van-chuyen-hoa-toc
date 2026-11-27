@@ -319,7 +319,7 @@ export class ManifestService {
         const remaining = await tx.manifestItem.count({
           where: {
             manifestId: current.manifestId,
-            package: { orderId: order.id },
+            package: { is: { orderId: order.id } },
             status: { not: ManifestItemStatus.UNLOADED },
           },
         });
