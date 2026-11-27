@@ -6,6 +6,7 @@ import {
   IncidentType,
   ManifestItemStatus,
   ManifestStatus,
+  NotificationType,
   OrderStatus,
   Role,
   TripStatus,
@@ -370,7 +371,7 @@ export class ManifestService {
       this.realtime.emitToTrip(trip.id, 'incident:created', incidentEvent);
       this.realtime.emitToOrder(order.id, 'incident:created', incidentEvent);
       await this.notifications.notifyManagers({
-        type: 'INCIDENT',
+        type: NotificationType.INCIDENT,
         title: 'Có kiện hàng thiếu/hỏng trong chuyến',
         body: updated.incident.description,
         resourceType: 'incident',
