@@ -1,0 +1,21 @@
+@startuml
+actor STAFF
+participant "Mobile App" as App
+participant "NestJS API" as API
+database "PostgreSQL" as DB
+participant "Socket.IO" as Socket
+
+STAFF -> App : Quét QR / nhập tracking code
+App -> API : GET /api/v1/orders/{orderId}
+API -> DB : Kiểm tra đơn và quyền STAFF
+DB --> API : Order + current status
+API --> App : Order detail
+STAFF -> App : Cân kiện, xác nhận bến nhận
+App -> API : POST /api/v1/orders/{orderId}/receipt
+API -> API : Validate status=PENDING_RECEIPT
+API -> DB : Transaction: cập nhật khối lượng, bến, status=RECEIVED, history
+DB --> API : Updated Order
+API -> Socket : Emit order:status_changed
+Socket --> App : Cập nhật màn hình liên quan
+API --> App : 200 Order RECEIVED
+@enduml
