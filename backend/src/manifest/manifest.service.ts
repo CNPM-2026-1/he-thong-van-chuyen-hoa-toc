@@ -185,7 +185,7 @@ export class ManifestService {
           where: { id: manifest.id },
           data: { version: { increment: 1 } },
         });
-        await tx.trip.update({
+        const updatedTrip = await tx.trip.update({
           where: { id: trip.id },
           data: { version: { increment: 1 } },
         });
@@ -200,6 +200,7 @@ export class ManifestService {
           tripId,
           manifestId: manifest.id,
           addedCount: created.count,
+          resourceVersion: updatedTrip.version,
           items: items.map((item) => ({
             id: item.id,
             tripId,
@@ -214,11 +215,16 @@ export class ManifestService {
       },
     );
 
-    this.realtime.emitToTrip(tripId, 'manifest:updated', {
+    this.realtime.emitToTrip(
       tripId,
-      manifestId: result.manifestId,
-      addedCount: result.addedCount,
-    });
+      'manifest:updated',
+      {
+        tripId,
+        manifestId: result.manifestId,
+        addedCount: result.addedCount,
+      },
+      result.resourceVersion,
+    );
     return result;
   }
 
@@ -277,7 +283,7 @@ export class ManifestService {
         where: { id: current.manifestId },
         data: { version: { increment: 1 } },
       });
-      await tx.trip.update({
+      const updatedTrip = await tx.trip.update({
         where: { id: trip.id },
         data: { version: { increment: 1 } },
       });
@@ -351,7 +357,7 @@ export class ManifestService {
         }
       }
 
-      return { item, orderStatusChanged, incident: createdIncident };
+      return { item, orderStatusChanged, incident: createdIncident, tripVersion: updatedTrip.version };
     });
 
     const eventData = {
@@ -365,7 +371,7 @@ export class ManifestService {
       scannedBy: user.id,
       scannedAt: updated.item.scannedAt,
     };
-    this.realtime.emitToTrip(trip.id, 'manifest:item_scanned', eventData, trip.version + 1);
+    this.realtime.emitToTrip(trip.id, 'manifest:item_scanned', eventData, updated.tripVersion);
     this.realtime.emitToOrder(order.id, 'manifest:item_scanned', eventData, order.version + (updated.orderStatusChanged ? 1 : 0));
 
     if (updated.incident) {
