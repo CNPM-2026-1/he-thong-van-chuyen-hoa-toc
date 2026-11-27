@@ -30,8 +30,6 @@ export class TripsService {
   async list(query: ListTripsQueryDto, user: User) {
     this.assertRoleCanReadTrips(user);
     const where: Prisma.TripWhereInput = {
-      status: query.status,
-      routeId: query.routeId,
       ...(query.search?.trim()
         ? { code: { contains: query.search.trim(), mode: 'insensitive' } }
         : {}),
@@ -103,10 +101,22 @@ export class TripsService {
             throw ApiException.conflict('VEHICLE_UNAVAILABLE', 'Xe không ở trạng thái sẵn sàng');
           }
 
+          const estimatedArrival = arrival ?? new Date(
+            departure.getTime() + route.estimatedDurationMinutes * 60 * 1000,
+          );
           const assignmentConflict = await tx.trip.count({
             where: {
               status: { in: ACTIVE_TRIP_STATUSES },
               OR: [{ vehicleId: vehicle.id }, { driverId: driver.id }],
+              AND: [
+                { plannedDepartureAt: { lt: estimatedArrival } },
+                {
+                  OR: [
+                    { plannedArrivalAt: null },
+                    { plannedArrivalAt: { gt: departure } },
+                  ],
+                },
+              ],
             },
           });
           if (assignmentConflict > 0) {
