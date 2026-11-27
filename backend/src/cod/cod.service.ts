@@ -29,8 +29,8 @@ export class CodService {
       ...(query.search?.trim()
         ? {
             OR: [
-              { order: { trackingCode: { contains: query.search.trim(), mode: 'insensitive' } } },
-              { order: { recipientName: { contains: query.search.trim(), mode: 'insensitive' } } },
+              { order: { is: { trackingCode: { contains: query.search.trim(), mode: 'insensitive' } } } },
+              { order: { is: { recipientName: { contains: query.search.trim(), mode: 'insensitive' } } } },
             ],
           }
         : {}),
