@@ -60,4 +60,5 @@ Migrations:
 2. Chạy `npx prisma format`, `npx prisma validate`, `npm run prisma:generate`, `npm run db:deploy`, `npm run build`.
 3. Kiểm thử các luồng: tạo Trip → thêm Order vào manifest → load packages → DISPATCHED → IN_TRANSIT → GPS realtime → ARRIVED → unload → delivery OTP → COD reconciliation.
 4. Test OTP local qua log backend; test ảnh qua MinIO.
-5. Review cùng TV1/TV5: Order/Package creation, ERD, enum, phân công STAFF theo bến và trạng thái return.
+5. TV1/TV5 cần chốt Order/Package creation, mapping DonHang/KienHang, ERD, enum và phân công STAFF theo bến.
+6. Lưu ý: nhánh này chưa có OrdersModule/PricingModule; POST /orders, POST /pricing/quotes và POST /orders/{orderId}/receipt hiện chỉ là OpenAPI/Prism/Postman contract, chưa phải backend endpoint chạy thật.
