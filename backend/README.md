@@ -1,6 +1,6 @@
 # Backend – Hệ thống vận chuyển hỏa tốc
 
-NestJS 10 + Prisma 5 + PostgreSQL 16. Sprint 1 có: xác thực JWT, phân quyền theo vai trò, quản lý tài khoản và các danh mục (bến, tuyến, xe, tài xế, bảng giá).
+NestJS 10 + Prisma 5 + PostgreSQL 16. Sprint 1: xác thực JWT, phân quyền theo vai trò, quản lý tài khoản và danh mục. Sprint 2 (TV7, phần nền đã triển khai): quản lý chuyến xe, lịch sử trạng thái chuyến và ghi nhận GPS bằng REST API.
 
 ## Chạy lần đầu
 
@@ -139,3 +139,50 @@ Mỗi module gồm `*.controller.ts` (route + Swagger), `*.service.ts` (nghiệp
 
 - `prisma/schema.prisma` mới có các bảng của Sprint 1 theo hợp đồng chung. Cần đối chiếu với ERD đầy đủ của Đầu mục 3 rồi bổ sung bằng migration mới, không sửa migration đã có.
 - Khi deploy, nhớ đổi `JWT_ACCESS_SECRET` và `JWT_REFRESH_SECRET` thành chuỗi ngẫu nhiên dài, và giới hạn `CORS_ORIGINS`.
+
+
+## Sprint 2 – Chuyến xe và GPS (TV7)
+
+Các endpoint đã được bổ sung trong nhánh `feature/tv7-trips-tracking`:
+
+| Method | Endpoint | Quyền |
+|---|---|---|
+| GET | `/api/v1/trips` | DRIVER, MANAGER, ADMIN (STAFF đang khóa đến khi có phân công bến) |
+| POST | `/api/v1/trips` | MANAGER, ADMIN |
+| GET | `/api/v1/trips/:tripId` | DRIVER được phân công, MANAGER, ADMIN |
+| PATCH | `/api/v1/trips/:tripId/status` | DRIVER được phân công, MANAGER, ADMIN |
+| POST | `/api/v1/trips/:tripId/locations` | DRIVER được phân công |
+| GET | `/api/v1/trips/:tripId/locations/latest` | DRIVER được phân công, MANAGER, ADMIN |
+
+Các trạng thái chuyến được kiểm tra ở backend:
+- `PLANNED -> BOARDING -> DISPATCHED -> IN_TRANSIT -> ARRIVED -> COMPLETED`.
+- Chỉ cho phép hủy từ `PLANNED` hoặc `BOARDING`.
+- Mọi thay đổi trạng thái và người thực hiện được lưu trong `trip_status_history`.
+- Khi `DISPATCHED`, xe chuyển sang `IN_USE`; khi chuyến kết thúc/hủy, backend kiểm tra các chuyến đang hoạt động khác trước khi đưa xe về `AVAILABLE`.
+- Khi tạo chuyến, backend kiểm tra tuyến, xe, tài xế, trạng thái hoạt động và xung đột lịch phân công.
+
+GPS:
+- Tài xế chỉ gửi vị trí cho chuyến được phân công và đang ở trạng thái `IN_TRANSIT`.
+- Tọa độ được validate theo giới hạn vĩ độ/kinh độ; thời điểm GPS không được vượt quá 2 phút trong tương lai.
+- Lịch sử tọa độ lưu trong `trip_locations`; endpoint latest lấy bản ghi mới nhất theo `recordedAt`.
+
+### Chạy migration và kiểm tra
+
+Từ thư mục `backend/`:
+
+```bash
+npx prisma format
+npx prisma validate
+npm run db:migrate -- --name add_trips_tracking
+npm run build
+npm run start:dev
+```
+
+Sau khi tạo migration bằng `db:migrate`, commit cả thư mục migration được Prisma sinh. Trên môi trường tích hợp đã có migration, dùng `npm run db:deploy`.
+
+### Giới hạn cần xử lý trước khi mở quyền đầy đủ
+
+- Schema hiện chưa có bảng/quan hệ phân công STAFF theo bến, vì vậy API danh sách/chi tiết chuyến và vị trí tạm từ chối STAFF thay vì trả dữ liệu toàn hệ thống.
+- Chưa có quan hệ Order–Trip/Manifest nên chưa thể xác minh CUSTOMER đang theo dõi chuyến có chứa đơn của mình; endpoint latest tạm từ chối CUSTOMER.
+- Manifest/Package chưa được triển khai. Chờ nhóm thống nhất mỗi dòng manifest là đơn hàng hay từng kiện hàng.
+- Socket.IO Gateway chưa được thêm vào phần này; sau khi thêm dependency `@nestjs/websockets`, `@nestjs/platform-socket.io`, `socket.io`, cần cập nhật `package-lock.json`, rồi phát `trip:location_updated` sau khi lưu GPS thành công.
