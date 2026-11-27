@@ -4606,9 +4606,13 @@ paths:
                 $ref: '#/components/schemas/Manifest'
               example: &id041
                 tripId: aaaaaaaa-1111-4111-8111-111111111111
+                manifestId: cccccccc-1111-4111-8111-111111111111
+                code: MAN-TRIP-HN-HCM-001
+                status: OPEN
                 items: []
                 totalItems: 0
                 loadedItems: 0
+                unloadedItems: 0
         '400':
           description: Dữ liệu không hợp lệ
           content:
@@ -4699,7 +4703,8 @@ paths:
                 manifestId: cccccccc-1111-4111-8111-111111111111
                 addedCount: 1
                 items:
-                - id: bbbbbbbb-1111-4111-8111-111111111111
+                - &id021
+                  id: bbbbbbbb-1111-4111-8111-111111111111
                   tripId: aaaaaaaa-1111-4111-8111-111111111111
                   orderId: 99999999-9999-4999-8999-999999999999
                   trackingCode: HT202611110001
@@ -7755,8 +7760,10 @@ components:
         manifestId:
           type: string
           format: uuid
+          nullable: true
         code:
           type: string
+          nullable: true
         status:
           type: string
           enum: [OPEN, CLOSED]
