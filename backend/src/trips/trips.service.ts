@@ -115,8 +115,8 @@ export class TripsService {
               'Tài xế không tồn tại hoặc không còn hoạt động',
             );
           }
-          if (vehicle.status !== VehicleStatus.AVAILABLE) {
-            throw ApiException.conflict('VEHICLE_UNAVAILABLE', 'Xe không ở trạng thái sẵn sàng');
+          if (vehicle.status === VehicleStatus.MAINTENANCE) {
+            throw ApiException.conflict('VEHICLE_UNAVAILABLE', 'Xe đang ở trạng thái bảo dưỡng');
           }
 
           const estimatedArrival =
