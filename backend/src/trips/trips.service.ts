@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma, Role, TripStatus, User, VehicleStatus } from '@prisma/client';
 import { ApiException } from '../common/api-exception';
+import { IdempotencyService } from '../common/idempotency.service';
 import { paginated, skipTake } from '../common/utils';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTripDto, ListTripsQueryDto, UpdateTripStatusDto } from './dto/trip.dto';
@@ -25,7 +26,10 @@ const ALLOWED_TRANSITIONS: Record<TripStatus, TripStatus[]> = {
 
 @Injectable()
 export class TripsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly idempotency: IdempotencyService,
+  ) {}
 
   async list(query: ListTripsQueryDto, user: User) {
     this.assertRoleCanReadTrips(user);
@@ -64,7 +68,7 @@ export class TripsService {
     return trip;
   }
 
-  async create(dto: CreateTripDto, user: User) {
+  async create(dto: CreateTripDto, user: User, idempotencyKey: string | undefined) {
     this.assertManagerOrAdmin(user);
 
     const departure = new Date(dto.plannedDepartureAt);
@@ -77,7 +81,11 @@ export class TripsService {
     }
 
     try {
-      return await this.prisma.$transaction(
+      return await this.idempotency.execute(
+        user.id,
+        'POST:/trips',
+        idempotencyKey,
+        dto,
         async (tx) => {
           const [route, vehicle, driver] = await Promise.all([
             tx.route.findFirst({
@@ -94,16 +102,24 @@ export class TripsService {
 
           if (!route) throw ApiException.notFound('Không tìm thấy tuyến đang hoạt động');
           if (!vehicle) throw ApiException.notFound('Không tìm thấy xe đang hoạt động');
-          if (!driver || driver.user.deletedAt || driver.user.status !== 'ACTIVE' || driver.user.role !== Role.DRIVER) {
-            throw ApiException.badRequest('VALIDATION_ERROR', 'Tài xế không tồn tại hoặc không còn hoạt động');
+          if (
+            !driver ||
+            driver.user.deletedAt ||
+            driver.user.status !== 'ACTIVE' ||
+            driver.user.role !== Role.DRIVER
+          ) {
+            throw ApiException.badRequest(
+              'VALIDATION_ERROR',
+              'Tài xế không tồn tại hoặc không còn hoạt động',
+            );
           }
           if (vehicle.status !== VehicleStatus.AVAILABLE) {
             throw ApiException.conflict('VEHICLE_UNAVAILABLE', 'Xe không ở trạng thái sẵn sàng');
           }
 
-          const estimatedArrival = arrival ?? new Date(
-            departure.getTime() + route.estimatedDurationMinutes * 60 * 1000,
-          );
+          const estimatedArrival =
+            arrival ??
+            new Date(departure.getTime() + route.estimatedDurationMinutes * 60 * 1000);
           const assignmentConflict = await tx.trip.count({
             where: {
               status: { in: ACTIVE_TRIP_STATUSES },
@@ -122,7 +138,7 @@ export class TripsService {
           if (assignmentConflict > 0) {
             throw ApiException.conflict(
               'TRIP_ASSIGNMENT_CONFLICT',
-              'Xe hoặc tài xế đang được phân công vào một chuyến chưa kết thúc',
+              'Xe hoặc tài xế đang được phân công vào một chuyến có lịch trùng',
             );
           }
 
@@ -150,19 +166,10 @@ export class TripsService {
 
           return trip;
         },
-        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
       );
     } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        if (error.code === 'P2002') {
-          throw ApiException.conflict('DUPLICATE', 'Mã chuyến xe đã tồn tại');
-        }
-        if (error.code === 'P2034') {
-          throw ApiException.conflict(
-            'TRIP_ASSIGNMENT_CONFLICT',
-            'Dữ liệu phân công vừa thay đổi; vui lòng tải lại và thử lại',
-          );
-        }
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw ApiException.conflict('DUPLICATE', 'Mã chuyến xe đã tồn tại');
       }
       throw error;
     }
@@ -183,7 +190,10 @@ export class TripsService {
             where: { userId: user.id, deletedAt: null, isActive: true },
           });
           if (!driver || trip.driverId !== driver.id) {
-            throw ApiException.forbidden('FORBIDDEN', 'Bạn chỉ được cập nhật chuyến xe được phân công');
+            throw ApiException.forbidden(
+              'FORBIDDEN',
+              'Bạn chỉ được cập nhật chuyến xe được phân công',
+            );
           }
         }
 
@@ -217,7 +227,12 @@ export class TripsService {
 
         if (dto.status === TripStatus.DISPATCHED) {
           const vehicle = await tx.vehicle.findUnique({ where: { id: trip.vehicleId } });
-          if (!vehicle || vehicle.deletedAt || !vehicle.isActive || vehicle.status !== VehicleStatus.AVAILABLE) {
+          if (
+            !vehicle ||
+            vehicle.deletedAt ||
+            !vehicle.isActive ||
+            vehicle.status !== VehicleStatus.AVAILABLE
+          ) {
             throw ApiException.conflict(
               'VEHICLE_UNAVAILABLE',
               'Xe không còn ở trạng thái sẵn sàng để xuất bến',
@@ -268,7 +283,10 @@ export class TripsService {
       where: { userId, deletedAt: null, isActive: true },
     });
     if (!driver) {
-      throw ApiException.forbidden('FORBIDDEN', 'Tài khoản chưa có hồ sơ tài xế đang hoạt động');
+      throw ApiException.forbidden(
+        'FORBIDDEN',
+        'Tài khoản chưa có hồ sơ tài xế đang hoạt động',
+      );
     }
     return driver;
   }
