@@ -61,3 +61,19 @@ export class StartReturnDto {
   @MaxLength(500)
   reason: string;
 }
+
+ 
+export class RetryDeliveryDto {
+  @ApiPropertyOptional({ maxLength: 500, example: 'Người nhận hẹn giao lại vào buổi chiều' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  note?: string;
+}
+
+export class CompleteReturnDto {
+  @ApiProperty({ maxLength: 500, example: 'Người gửi đã xác nhận nhận lại kiện hàng tại bến gửi' })
+  @IsString()
+  @MaxLength(500)
+  confirmationNote: string;
+}
