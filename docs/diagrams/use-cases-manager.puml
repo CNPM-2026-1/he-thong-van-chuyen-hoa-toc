@@ -1,0 +1,26 @@
+@startuml
+left to right direction
+skinparam shadowing false
+actor MANAGER
+rectangle "Web Admin - quản lý nhà xe" {
+  usecase "Đăng nhập" as A
+  usecase "Quản lý bến / tuyến / xe / tài xế" as B
+  usecase "Quản lý tài khoản nhân viên/tài xế" as C
+  usecase "Tạo chuyến và phân công xe/tài xế" as D
+  usecase "Lập và kiểm tra manifest" as E
+  usecase "Theo dõi vị trí và trạng thái chuyến" as F
+  usecase "Xử lý sự cố" as G
+  usecase "Đối soát COD" as H
+  usecase "Xem báo cáo thống kê" as I
+}
+MANAGER --> A
+MANAGER --> B
+MANAGER --> C
+MANAGER --> D
+MANAGER --> E
+MANAGER --> F
+MANAGER --> G
+MANAGER --> H
+MANAGER --> I
+D .> E : <<include>>
+@enduml
