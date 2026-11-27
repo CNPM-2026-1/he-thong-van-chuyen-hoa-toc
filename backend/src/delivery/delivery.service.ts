@@ -438,7 +438,15 @@ export class DeliveryService {
       resourceId: orderId,
       orderId,
     });
-    return result.attempt;
+    return {
+      id: result.attempt.id,
+      orderId: result.attempt.orderId,
+      driverId: result.attempt.driverId,
+      status: result.attempt.status,
+      failureReason: result.attempt.failureReason,
+      note: result.attempt.note,
+      createdAt: result.attempt.createdAt,
+    };
   }
 
   async startReturn(
