@@ -137,7 +137,7 @@ Mỗi module gồm `*.controller.ts` (route + Swagger), `*.service.ts` (nghiệp
 
 ## Ghi chú
 
-- `prisma/schema.prisma` mới có các bảng của Sprint 1 theo hợp đồng chung. Cần đối chiếu với ERD đầy đủ của Đầu mục 3 rồi bổ sung bằng migration mới, không sửa migration đã có.
+- `prisma/schema.prisma` hiện gồm mô hình Sprint 1, chuyến/GPS và các bảng vận hành Sprint 2. Tuy nhiên mô hình `Order` vẫn là projection tạm, chưa khớp đầy đủ bảng `DonHang` của TV5 (thiếu thông tin người gửi/địa chỉ nhận và khóa tuyến/bảng giá); xem mục tích hợp CSDL bên dưới trước khi merge.
 - Khi deploy, nhớ đổi `JWT_ACCESS_SECRET` và `JWT_REFRESH_SECRET` thành chuỗi ngẫu nhiên dài, và giới hạn `CORS_ORIGINS`.
 
 
@@ -150,6 +150,12 @@ Nhánh triển khai: `feature/sprint2-bo2-backend`, tạo trên nền `feature/t
 Mỗi dòng manifest đại diện cho **một kiện Package**. Một request `POST /trips/:tripId/manifest/items` nhận `orderId`; backend tìm toàn bộ Package thuộc Order và tạo một ManifestItem cho từng kiện. Cách này bám mô hình `KienHang` và `ChiTietPhieuKe` trong ERD/SQL của nhánh `database`.
 
 Đây là quyết định triển khai tạm của Bộ 2, cần TV5/nhóm xác nhận trước khi merge. Bộ 1 phải tạo đủ Package khi tạo Order; nếu `packages.length` khác `packageCount`, backend từ chối thêm đơn vào manifest.
+
+### Đối chiếu với SQL TV5 – còn chờ xác nhận
+
+SQL Server script ở nhánh `database` mô tả `DonHang` với các trường `MaTuyenDuong`, `MaBangGia`, `TenNguoiGui`, `SDTNguoiGui`, `DiaChiNguoiGui`, `DiaChiNguoiNhan`, cùng `TenNguoiNhan`, `SDTNguoiNhan`, `TongCuoc`, `TienCOD`. Model Prisma `Order` hiện dùng `originStationId`/`destinationStationId`, tên/ngày/địa chỉ người nhận chưa đầy đủ và không lưu riêng người gửi, địa chỉ nhận, routeId/priceRuleId. `packageCount`/`weightGrams` trong Prisma cũng cần thống nhất là dữ liệu tổng hợp hay dữ liệu lưu tại đơn, vì SQL TV5 đặt khối lượng ở `KienHang`.
+
+Do PR #2 của TV5 chưa được nhóm xác nhận/merge, Bộ 2 chưa tự đổi các trường này để tránh chốt sai mô hình. Cần TV5/TV1 quyết định mapping chính thức và sau đó tạo migration PostgreSQL bổ sung; không chạy SQL Server script trực tiếp trên PostgreSQL.
 
 ### TV7 – Chuyến xe, manifest, GPS và realtime
 
