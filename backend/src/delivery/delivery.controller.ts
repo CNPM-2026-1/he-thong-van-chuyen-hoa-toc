@@ -3,7 +3,7 @@ import { ApiBearerAuth, ApiHeader, ApiOperation, ApiTags } from '@nestjs/swagger
 import { Role, User } from '@prisma/client';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
-import { DeliveryConfirmDto, DeliveryFailedDto, StartReturnDto } from './dto/delivery.dto';
+import { CompleteReturnDto, DeliveryConfirmDto, DeliveryFailedDto, RetryDeliveryDto, StartReturnDto } from './dto/delivery.dto';
 import { DeliveryService } from './delivery.service';
 
 @ApiTags('Delivery')
@@ -62,6 +62,19 @@ export class DeliveryController {
     return this.delivery.recordDeliveryFailure(orderId, dto, user, key);
   }
 
+  @Post('delivery/retry')
+  @Roles(Role.MANAGER, Role.ADMIN)
+  @ApiHeader({ name: 'Idempotency-Key', required: true })
+  @ApiOperation({ summary: 'Duyệt giao lại đơn đã giao thất bại' })
+  retry(
+    @Param('orderId', ParseUUIDPipe) orderId: string,
+    @Body() dto: RetryDeliveryDto,
+    @CurrentUser() user: User,
+    @Headers('Idempotency-Key') key?: string,
+  ) {
+    return this.delivery.retryDelivery(orderId, dto, user, key);
+  }
+
   @Post('return')
   @Roles(Role.MANAGER, Role.ADMIN)
   @ApiHeader({ name: 'Idempotency-Key', required: true })
@@ -73,5 +86,18 @@ export class DeliveryController {
     @Headers('Idempotency-Key') key?: string,
   ) {
     return this.delivery.startReturn(orderId, dto, user, key);
+  }
+
+  @Post('return/complete')
+  @Roles(Role.MANAGER, Role.ADMIN)
+  @ApiHeader({ name: 'Idempotency-Key', required: true })
+  @ApiOperation({ summary: 'Xác nhận đơn đã hoàn về bến gửi' })
+  completeReturn(
+    @Param('orderId', ParseUUIDPipe) orderId: string,
+    @Body() dto: CompleteReturnDto,
+    @CurrentUser() user: User,
+    @Headers('Idempotency-Key') key?: string,
+  ) {
+    return this.delivery.completeReturn(orderId, dto, user, key);
   }
 }
