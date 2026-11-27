@@ -117,6 +117,20 @@ export class IncidentsService {
         }
 
         if (order && tripId) {
+          const manifestedPackage = await tx.manifestItem.findFirst({
+            where: {
+              package: { is: { orderId: order.id } },
+              manifest: { is: { tripId } },
+            },
+            select: { id: true },
+          });
+          if (!manifestedPackage) {
+            throw ApiException.conflict(
+              'ORDER_NOT_IN_TRIP_MANIFEST',
+              'Đơn hàng không có kiện nào trong manifest của chuyến xe được gắn sự cố',
+            );
+          }
+
           const assignedTrip = await tx.trip.findUnique({
             where: { id: tripId },
             include: { route: true },
