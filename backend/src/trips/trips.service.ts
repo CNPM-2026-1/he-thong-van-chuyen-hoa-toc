@@ -233,7 +233,7 @@ export class TripsService {
                 id: trip.driverId,
                 deletedAt: null,
                 isActive: true,
-                user: { deletedAt: null, status: 'ACTIVE' },
+                user: { deletedAt: null, status: 'ACTIVE', role: Role.DRIVER },
               },
             }),
             tx.trip.count({
