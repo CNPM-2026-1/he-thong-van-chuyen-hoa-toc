@@ -95,7 +95,7 @@ export class IdempotencyService {
               'Idempotency-Key đã được dùng với nội dung request khác',
             );
           }
-          return existing.response as T;
+          return existing.response as unknown as T;
         }
         if (error.code === 'P2034') {
           throw ApiException.conflict(
