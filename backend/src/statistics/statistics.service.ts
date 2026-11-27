@@ -17,6 +17,7 @@ export class StatisticsService {
       ordersInTransit,
       deliveredOrders,
       returnedOrders,
+      returnsInProgress,
       cod,
       openIncidents,
     ] = await Promise.all([
@@ -28,13 +29,11 @@ export class StatisticsService {
         },
       }),
       this.prisma.order.count({ where: { deliveredAt: range } }),
+      this.prisma.order.count({ where: { returnedAt: range } }),
       this.prisma.order.count({
         where: {
-          createdAt: range,
-          OR: [
-            { returnedAt: range },
-            { status: { in: [OrderStatus.RETURNING, OrderStatus.RETURNED] } },
-          ],
+          status: OrderStatus.RETURNING,
+          updatedAt: range,
         },
       }),
       this.prisma.codTransaction.aggregate({
@@ -56,6 +55,7 @@ export class StatisticsService {
       ordersInTransit,
       deliveredOrders,
       returnedOrders,
+      returnsInProgress,
       totalCodVnd: cod._sum.amountVnd ?? 0,
       openIncidents,
     };
