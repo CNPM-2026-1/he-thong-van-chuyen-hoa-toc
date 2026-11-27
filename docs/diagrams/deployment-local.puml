@@ -1,0 +1,36 @@
+@startuml
+skinparam shadowing false
+skinparam componentStyle rectangle
+
+node "Máy lập trình viên" as Dev {
+  node "Trình duyệt" as Browser {
+    artifact "Web Admin (Vite dev server)" as Web
+  }
+  node "Node.js process" as Node {
+    artifact "NestJS Backend\nREST + Socket.IO\n:3000" as API
+  }
+  node "Docker" as Docker {
+    database "PostgreSQL\n:5432" as DB
+    artifact "MinIO (tùy chọn)\nS3 API :9000" as Minio
+  }
+}
+
+node "Điện thoại / Expo Go" as Phone {
+  artifact "Mobile App" as App
+}
+cloud "Internet / dịch vụ ngoài" as External
+
+Browser --> API : http://localhost:3000/api/v1
+App --> API : http://<LAN-IP>:3000/api/v1
+API --> DB : Prisma / TCP 5432
+API --> Minio : S3 API (nếu dùng)
+API --> External : HTTPS (OTP / Maps / Push)
+App <--> API : Socket.IO qua LAN
+Web <--> API : Socket.IO / HTTP
+
+note bottom of Phone
+Không cấu hình localhost trong app
+khi chạy trên thiết bị thật.
+Dùng IP LAN máy phát triển.
+end note
+@enduml
