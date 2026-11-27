@@ -5474,13 +5474,118 @@ paths:
             example: &id048
               reasonCode: RECIPIENT_ABSENT
               note: Khong lien lac duoc nguoi nhan
+  /orders/{orderId}/delivery/retry:
+    post:
+      operationId: retryFailedDelivery
+      tags: [Delivery]
+      summary: Duyệt giao lại đơn đã giao thất bại
+      description: MANAGER/ADMIN duyệt giao lại; chuyến phải ARRIVED và tất cả kiện đã UNLOADED.
+      parameters:
+      - $ref: "#/components/parameters/IdempotencyKey"
+      - name: orderId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RetryDeliveryRequest' }
+            example: { note: "Người nhận hẹn giao lại vào buổi chiều" }
+      responses:
+        '200':
+          description: Đơn đã chuyển sang OUT_FOR_DELIVERY
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Order' }
+        '400':
+          description: Dữ liệu không hợp lệ
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+        '401':
+          description: Chưa xác thực
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+        '403':
+          description: Không có quyền
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+        '404':
+          description: Không tìm thấy đơn
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+        '409':
+          description: Đơn không ở trạng thái có thể giao lại hoặc chưa sẵn sàng
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+      x-roles: [MANAGER, ADMIN]
+      security:
+      - bearerAuth: []
+  /orders/{orderId}/return/complete:
+    post:
+      operationId: completeOrderReturn
+      tags: [Delivery]
+      summary: Xác nhận đơn đã hoàn về bến gửi
+      description: Chỉ hoàn tất đơn RETURNING; ghi returnedAt và lịch sử trạng thái.
+      parameters:
+      - $ref: "#/components/parameters/IdempotencyKey"
+      - name: orderId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReturnCompleteRequest' }
+            example: { confirmationNote: "Người gửi đã nhận lại kiện hàng tại bến gửi" }
+      responses:
+        '200':
+          description: Đơn đã chuyển sang RETURNED
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Order' }
+        '400':
+          description: Dữ liệu không hợp lệ
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+        '401':
+          description: Chưa xác thực
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+        '403':
+          description: Không có quyền
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+        '404':
+          description: Không tìm thấy đơn
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+        '409':
+          description: Đơn không ở trạng thái RETURNING
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+      x-roles: [MANAGER, ADMIN]
+      security:
+      - bearerAuth: []
+
   /orders/{orderId}/return:
     post:
       operationId: startOrderReturn
       tags:
       - Orders
       summary: Bắt đầu hoàn hàng
-      description: Chuyển DELIVERY_FAILED hoặc INCIDENT_HOLD sang RETURNING theo quyết định của quản lý.
+      description: Chỉ chuyển DELIVERY_FAILED sang RETURNING; INCIDENT_HOLD phải được kết thúc qua quy trình xử lý sự cố.
       responses:
         '200':
           description: OK
@@ -8365,4 +8470,21 @@ components:
           type: string
           format: date-time
       required: [id, userId, type, title, body, createdAt]
+      additionalProperties: false
+
+    RetryDeliveryRequest:
+      type: object
+      properties:
+        note:
+          type: string
+          maxLength: 500
+      additionalProperties: false
+
+    ReturnCompleteRequest:
+      type: object
+      properties:
+        confirmationNote:
+          type: string
+          maxLength: 500
+      required: [confirmationNote]
       additionalProperties: false
