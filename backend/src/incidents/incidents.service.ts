@@ -278,7 +278,7 @@ export class IncidentsService {
         version: number;
       } | null = null;
 
-      if (dto.status === IncidentStatus.RESOLVED && incident.orderId) {
+      if ((dto.status === IncidentStatus.RESOLVED || dto.status === IncidentStatus.CLOSED) && incident.orderId) {
         const order = await tx.order.findUnique({ where: { id: incident.orderId } });
         if (order && order.status === OrderStatus.INCIDENT_HOLD) {
           const otherOpenIncidents = await tx.incident.count({
