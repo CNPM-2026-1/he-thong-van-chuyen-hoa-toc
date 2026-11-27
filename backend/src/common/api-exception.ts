@@ -21,4 +21,7 @@ export class ApiException extends HttpException {
   static conflict(code: string, message: string) {
     return new ApiException(HttpStatus.CONFLICT, code, message);
   }
+  static serviceUnavailable(code: string, message: string) {
+    return new ApiException(HttpStatus.SERVICE_UNAVAILABLE, code, message);
+  }
 }
