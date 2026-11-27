@@ -89,21 +89,31 @@ export class IncidentsService {
         if (dto.orderId && !order) throw ApiException.notFound('Không tìm thấy đơn hàng');
 
         if (order && user.role === Role.DRIVER) {
+          const driver = await tx.driver.findFirst({
+            where: {
+              userId: user.id,
+              isActive: true,
+              deletedAt: null,
+            },
+          });
+          if (!driver) {
+            throw ApiException.forbidden('FORBIDDEN', 'Tài khoản chưa có hồ sơ tài xế đang hoạt động');
+          }
           const assignment = await tx.manifestItem.findFirst({
             where: {
               package: { is: { orderId: order.id } },
               manifest: {
                 is: {
-                  trip: { is: { driverId: (await tx.driver.findFirst({ where: { userId: user.id } }))?.id } },
+                  trip: { is: { driverId: driver.id } },
                 },
               },
             },
             include: { manifest: { include: { trip: true } } },
           });
-          if (!assignment) {
+          if (!assignment || (tripId && assignment.manifest.tripId !== tripId)) {
             throw ApiException.forbidden('FORBIDDEN', 'Đơn hàng không thuộc chuyến được phân công');
           }
-          tripId = tripId ?? assignment.manifest.tripId;
+          tripId = assignment.manifest.tripId;
         }
 
         if (user.role === Role.STAFF) {
@@ -112,7 +122,7 @@ export class IncidentsService {
             'Chưa có dữ liệu phân công nhân viên theo bến để kiểm tra quyền báo sự cố',
           );
         }
-        if (![Role.DRIVER, Role.MANAGER, Role.ADMIN].includes(user.role)) {
+        if (user.role !== Role.DRIVER && user.role !== Role.MANAGER && user.role !== Role.ADMIN) {
           throw ApiException.forbidden('FORBIDDEN', 'Không có quyền tạo sự cố');
         }
 
@@ -229,7 +239,7 @@ export class IncidentsService {
     const result = await this.prisma.$transaction(async (tx) => {
       const incident = await tx.incident.findUnique({ where: { id } });
       if (!incident) throw ApiException.notFound('Không tìm thấy sự cố');
-      if ([IncidentStatus.RESOLVED, IncidentStatus.CLOSED].includes(incident.status)) {
+      if (incident.status === IncidentStatus.RESOLVED || incident.status === IncidentStatus.CLOSED) {
         throw ApiException.conflict('INCIDENT_ALREADY_CLOSED', 'Sự cố đã được xử lý hoặc đóng');
       }
 
@@ -302,13 +312,15 @@ export class IncidentsService {
     });
 
     if (result.customerNotification) this.emitNotification(result.customerNotification);
-    this.realtime.emitToTrip(result.updated.tripId ?? '', 'incident:updated', {
-      incidentId: result.updated.id,
-      status: result.updated.status,
-      resolution: result.updated.resolution,
-      updatedAt: result.updated.updatedAt,
-      updatedBy: user.id,
-    });
+    if (result.updated.tripId) {
+      this.realtime.emitToTrip(result.updated.tripId, 'incident:updated', {
+        incidentId: result.updated.id,
+        status: result.updated.status,
+        resolution: result.updated.resolution,
+        updatedAt: result.updated.updatedAt,
+        updatedBy: user.id,
+      });
+    }
     if (result.updated.orderId) {
       this.realtime.emitToOrder(result.updated.orderId, 'incident:updated', {
         incidentId: result.updated.id,
