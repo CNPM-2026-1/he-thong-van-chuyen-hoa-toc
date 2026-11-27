@@ -25,7 +25,7 @@ Các file `.puml` là mã nguồn PlantUML. Có thể mở bằng PlantUML exten
 3. Backend triển khai REST trước; Socket.IO dùng cùng access token và authorization theo resource.
 4. Khi backend có endpoint thật, chuyển environment Postman từ mock URL sang API local/server và kiểm tra contract.
 
-## Kiểm tra trước khi mở PR
+## Trạng thái tài liệu và kiểm tra\n\n- Bộ PlantUML: 15 file nguồn đã được đưa vào `docs/diagrams/`.\n- OpenAPI: 47 paths / 69 operations; 2 route Notifications được bổ sung cho backend Sprint 2.\n- Postman: 69 requests; bổ sung danh mục Notifications (list + mark-read).\n- Prism mock: cấu hình tại `docs/mock-server/`; dùng chung `docs/openapi.yaml`.\n- CI tài liệu: `.github/workflows/design-contract-ci.yml` kiểm tra Prism/OpenAPI, số lượng sơ đồ, JSON Postman và environments. CI backend riêng tại `.github/workflows/backend-ci.yml`.\n\n## Kiểm tra trước khi mở PR
 
 - Chạy `npm install` rồi `npm run validate` tại `docs/mock-server` để kiểm tra OpenAPI.
 - Chạy `npm run mock` tại `docs/mock-server`, sau đó thử tối thiểu các luồng login, báo giá/tạo đơn, tiếp nhận, manifest, giao OTP và tracking bằng Postman.
