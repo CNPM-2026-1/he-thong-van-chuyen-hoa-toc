@@ -261,6 +261,7 @@ npm run start:dev
 
 ### Các giới hạn tích hợp còn lại cần nhóm xác nhận
 
+- Nhánh này chưa có `OrdersModule` và `PricingModule`. Vì vậy `POST /orders`, `POST /pricing/quotes` và `POST /orders/{orderId}/receipt` trong OpenAPI/Postman hiện là hợp đồng/mock để các thành viên tích hợp, không phải endpoint NestJS đã chạy thật. Seed chỉ tạo một Order/Package mẫu để kiểm tra manifest.
 - Mô hình mỗi ManifestItem là một Package cần TV5/nhóm duyệt; ERD, data dictionary và tài liệu SQL Server của nhánh `database` cần cập nhật đồng bộ với PostgreSQL/Prisma.
 - Schema hiện chưa có bảng phân công STAFF theo bến. Vì vậy, một số API và room vận hành từ chối STAFF thay vì cấp quyền xem rộng. Cần bổ sung bảng assignment nếu nhóm muốn STAFF thao tác manifest/sự cố theo bến.
 - SMS provider cần cấu hình URL/API key thật; local chỉ log OTP để demo.
