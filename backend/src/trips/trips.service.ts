@@ -216,6 +216,13 @@ export class TripsService {
         });
 
         if (dto.status === TripStatus.DISPATCHED) {
+          const vehicle = await tx.vehicle.findUnique({ where: { id: trip.vehicleId } });
+          if (!vehicle || vehicle.deletedAt || !vehicle.isActive || vehicle.status !== VehicleStatus.AVAILABLE) {
+            throw ApiException.conflict(
+              'VEHICLE_UNAVAILABLE',
+              'Xe không còn ở trạng thái sẵn sàng để xuất bến',
+            );
+          }
           await tx.vehicle.update({
             where: { id: trip.vehicleId },
             data: { status: VehicleStatus.IN_USE },
@@ -223,14 +230,18 @@ export class TripsService {
         }
 
         if (dto.status === TripStatus.COMPLETED || dto.status === TripStatus.CANCELLED) {
-          const otherActiveTrips = await tx.trip.count({
-            where: {
-              id: { not: trip.id },
-              vehicleId: trip.vehicleId,
-              status: { in: ACTIVE_TRIP_STATUSES },
-            },
-          });
-          if (otherActiveTrips === 0) {
+          const [otherActiveTrips, vehicle] = await Promise.all([
+            tx.trip.count({
+              where: {
+                id: { not: trip.id },
+                vehicleId: trip.vehicleId,
+                status: { in: ACTIVE_TRIP_STATUSES },
+              },
+            }),
+            tx.vehicle.findUnique({ where: { id: trip.vehicleId } }),
+          ]);
+          // Không ghi đè trạng thái MAINTENANCE do quản lý cập nhật trong lúc xe hoạt động.
+          if (otherActiveTrips === 0 && vehicle?.status === VehicleStatus.IN_USE) {
             await tx.vehicle.update({
               where: { id: trip.vehicleId },
               data: { status: VehicleStatus.AVAILABLE },
