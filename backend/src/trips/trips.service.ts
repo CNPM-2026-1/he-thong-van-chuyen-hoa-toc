@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { ManifestItemStatus, ManifestStatus, OrderStatus, Prisma, Role, TripStatus, User, VehicleStatus } from '@prisma/client';
+import { IncidentStatus, ManifestItemStatus, ManifestStatus, OrderStatus, Prisma, Role, TripStatus, User, VehicleStatus } from '@prisma/client';
 import { ApiException } from '../common/api-exception';
 import { IdempotencyService } from '../common/idempotency.service';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
@@ -331,7 +331,7 @@ export class TripsService {
           const unresolvedIncidents = await tx.incident.count({
             where: {
               tripId: trip.id,
-              status: { in: ['OPEN', 'IN_PROGRESS'] },
+              status: { in: [IncidentStatus.OPEN, IncidentStatus.IN_PROGRESS] },
             },
           });
           if (unresolvedIncidents > 0) {
