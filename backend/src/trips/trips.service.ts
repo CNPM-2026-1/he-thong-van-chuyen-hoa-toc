@@ -306,6 +306,42 @@ export class TripsService {
           }
         }
 
+        if (dto.status === TripStatus.COMPLETED) {
+          const manifest = await tx.manifest.findUnique({
+            where: { tripId: trip.id },
+            include: { items: true },
+          });
+          if (!manifest || manifest.items.length === 0) {
+            throw ApiException.conflict(
+              'MANIFEST_REQUIRED',
+              'Không thể hoàn tất chuyến khi chưa có manifest',
+            );
+          }
+          const unaccountedPackages = manifest.items.filter(
+            (item) =>
+              item.status === ManifestItemStatus.PENDING_LOAD ||
+              item.status === ManifestItemStatus.LOADED,
+          ).length;
+          if (unaccountedPackages > 0) {
+            throw ApiException.conflict(
+              'MANIFEST_NOT_COMPLETED',
+              'Vẫn còn kiện chưa được dỡ hoặc ghi nhận thiếu/hỏng',
+            );
+          }
+          const unresolvedIncidents = await tx.incident.count({
+            where: {
+              tripId: trip.id,
+              status: { in: ['OPEN', 'IN_PROGRESS'] },
+            },
+          });
+          if (unresolvedIncidents > 0) {
+            throw ApiException.conflict(
+              'TRIP_HAS_OPEN_INCIDENTS',
+              'Cần xử lý hết sự cố đang mở trước khi hoàn tất chuyến',
+            );
+          }
+        }
+
         const updatedTrip = await tx.trip.update({
           where: { id: trip.id },
           data: {
