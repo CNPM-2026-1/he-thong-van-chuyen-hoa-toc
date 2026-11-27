@@ -22,7 +22,7 @@ Kiểm tra OpenAPI trước khi mở pull request:
 npm run validate
 ```
 
-Lệnh này chỉ kiểm tra hợp đồng OpenAPI; Prism mock vẫn không thực hiện nghiệp vụ hay lưu dữ liệu.
+Script này khởi chạy Prism mock tạm thời, gọi `GET /api/v1/stations`, rồi tự dừng server. Nếu Prism không parse được OpenAPI hoặc mock server không khởi động, lệnh sẽ thất bại. Đây là kiểm tra parse + smoke test; nó không thay thế kiểm thử nghiệp vụ.
 
 Prism lắng nghe tại `http://localhost:4010`. API base URL cho Postman/mobile/web là:
 
