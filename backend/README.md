@@ -148,10 +148,10 @@ Các endpoint đã được bổ sung trong nhánh `feature/tv7-trips-tracking`:
 | Method | Endpoint | Quyền |
 |---|---|---|
 | GET | `/api/v1/trips` | DRIVER, MANAGER, ADMIN (STAFF đang khóa đến khi có phân công bến) |
-| POST | `/api/v1/trips` | MANAGER, ADMIN |
+| POST | `/api/v1/trips` | MANAGER, ADMIN + `Idempotency-Key` UUID |
 | GET | `/api/v1/trips/:tripId` | DRIVER được phân công, MANAGER, ADMIN |
 | PATCH | `/api/v1/trips/:tripId/status` | DRIVER được phân công, MANAGER, ADMIN |
-| POST | `/api/v1/trips/:tripId/locations` | DRIVER được phân công |
+| POST | `/api/v1/trips/:tripId/locations` | DRIVER được phân công + `Idempotency-Key` UUID |
 | GET | `/api/v1/trips/:tripId/locations/latest` | DRIVER được phân công, MANAGER, ADMIN |
 
 Các trạng thái chuyến được kiểm tra ở backend:
@@ -179,7 +179,7 @@ npm run build
 npm run start:dev
 ```
 
-Migration `20261127070000_add_trips_tracking` đã được thêm vào nhánh này; lệnh `db:deploy` áp dụng migration có sẵn mà không tạo migration trùng.
+Migration `20261127070000_add_trips_tracking` và `20261127080000_add_idempotency_records` đã được thêm vào nhánh này; lệnh `db:deploy` áp dụng migration có sẵn mà không tạo migration trùng.
 
 ### Giới hạn cần xử lý trước khi mở quyền đầy đủ
 
