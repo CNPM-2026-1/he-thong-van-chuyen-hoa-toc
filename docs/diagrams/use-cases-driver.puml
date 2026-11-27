@@ -1,0 +1,31 @@
+@startuml
+left to right direction
+skinparam shadowing false
+actor DRIVER
+rectangle "Ứng dụng tài xế" {
+  usecase "Đăng nhập" as A
+  usecase "Xem chuyến được phân công" as B
+  usecase "Xem manifest" as C
+  usecase "Quét QR nhận / giao kiện" as D
+  usecase "Gửi vị trí GPS" as E
+  usecase "Yêu cầu OTP giao hàng" as F
+  usecase "Xác nhận giao bằng OTP" as G
+  usecase "Chụp ảnh chứng minh" as H
+  usecase "Thu COD" as I
+  usecase "Báo sự cố chuyến/kiện" as J
+}
+DRIVER --> A
+DRIVER --> B
+DRIVER --> C
+DRIVER --> D
+DRIVER --> E
+DRIVER --> F
+DRIVER --> G
+DRIVER --> H
+DRIVER --> I
+DRIVER --> J
+G .> F : <<include>>
+G .> H : <<extend>>
+G .> I : <<extend>>
+D .> C : <<include>>
+@enduml
