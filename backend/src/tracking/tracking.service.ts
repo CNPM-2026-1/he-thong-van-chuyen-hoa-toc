@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { Role, TripStatus, User } from '@prisma/client';
+import { OrderStatus, Role, TripStatus, User } from '@prisma/client';
 import { ApiException } from '../common/api-exception';
 import { IdempotencyService } from '../common/idempotency.service';
+import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTripLocationDto } from './dto/trip-location.dto';
 
@@ -10,6 +11,7 @@ export class TrackingService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly idempotency: IdempotencyService,
+    private readonly realtime: RealtimeGateway,
   ) {}
 
   async createLocation(
@@ -22,7 +24,7 @@ export class TrackingService {
       throw ApiException.forbidden('FORBIDDEN', 'Chỉ tài xế được gửi vị trí GPS');
     }
 
-    return this.idempotency.execute(
+    const result = await this.idempotency.execute(
       user.id,
       `POST:/trips/${tripId}/locations`,
       idempotencyKey,
@@ -54,26 +56,31 @@ export class TrackingService {
         }
 
         const recordedAt = new Date(dto.recordedAt);
-        const latestAllowedTime = Date.now() + 2 * 60 * 1000;
-        if (recordedAt.getTime() > latestAllowedTime) {
+        if (recordedAt.getTime() > Date.now() + 2 * 60 * 1000) {
           throw ApiException.badRequest(
             'VALIDATION_ERROR',
             'recordedAt không được nằm quá 2 phút trong tương lai',
           );
         }
 
-        const location = await tx.tripLocation.create({
-          data: {
-            tripId: trip.id,
-            vehicleId: trip.vehicleId,
-            driverId: driver.id,
-            latitude: dto.latitude,
-            longitude: dto.longitude,
-            speedKph: dto.speedKph,
-            headingDegrees: dto.headingDegrees,
-            recordedAt,
-          },
-        });
+        const [location, updatedTrip] = await Promise.all([
+          tx.tripLocation.create({
+            data: {
+              tripId: trip.id,
+              vehicleId: trip.vehicleId,
+              driverId: driver.id,
+              latitude: dto.latitude,
+              longitude: dto.longitude,
+              speedKph: dto.speedKph,
+              headingDegrees: dto.headingDegrees,
+              recordedAt,
+            },
+          }),
+          tx.trip.update({
+            where: { id: trip.id },
+            data: { version: { increment: 1 } },
+          }),
+        ]);
 
         return {
           tripId: location.tripId,
@@ -84,9 +91,32 @@ export class TrackingService {
           speedKph: location.speedKph,
           headingDegrees: location.headingDegrees,
           recordedAt: location.recordedAt,
+          resourceVersion: updatedTrip.version,
         };
       },
     );
+
+    this.realtime.emitToTrip(tripId, 'trip:location_updated', {
+      tripId: result.tripId,
+      vehicleId: result.vehicleId,
+      driverId: result.driverId,
+      latitude: result.latitude,
+      longitude: result.longitude,
+      speedKph: result.speedKph,
+      headingDegrees: result.headingDegrees,
+      recordedAt: result.recordedAt,
+    }, result.resourceVersion);
+
+    return {
+      tripId: result.tripId,
+      vehicleId: result.vehicleId,
+      driverId: result.driverId,
+      latitude: result.latitude,
+      longitude: result.longitude,
+      speedKph: result.speedKph,
+      headingDegrees: result.headingDegrees,
+      recordedAt: result.recordedAt,
+    };
   }
 
   async getLatestLocation(tripId: string, user: User) {
@@ -101,13 +131,24 @@ export class TrackingService {
     }
 
     if (user.role === Role.CUSTOMER) {
-      throw ApiException.forbidden(
-        'ORDER_TRIP_SCOPE_NOT_CONFIGURED',
-        'Chưa có quan hệ đơn hàng - chuyến xe để xác minh khách hàng có quyền theo dõi chuyến này',
-      );
-    }
-
-    if (user.role === Role.DRIVER) {
+      const linkedOrder = await this.prisma.manifestItem.findFirst({
+        where: {
+          manifest: { is: { tripId } },
+          package: {
+            is: {
+              order: { is: { customerId: user.id, status: OrderStatus.IN_TRANSIT } },
+            },
+          },
+        },
+        select: { id: true },
+      });
+      if (!linkedOrder) {
+        throw ApiException.forbidden(
+          'FORBIDDEN',
+          'Bạn không có đơn hàng đang vận chuyển trên chuyến này',
+        );
+      }
+    } else if (user.role === Role.DRIVER) {
       const driver = await this.prisma.driver.findFirst({
         where: { userId: user.id, deletedAt: null, isActive: true },
       });
