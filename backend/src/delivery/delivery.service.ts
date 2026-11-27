@@ -25,7 +25,7 @@ import { IdempotencyService } from '../common/idempotency.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { PrismaService } from '../prisma/prisma.service';
-import { DeliveryConfirmDto, DeliveryFailedDto, StartReturnDto } from './dto/delivery.dto';
+import { CompleteReturnDto, DeliveryConfirmDto, DeliveryFailedDto, RetryDeliveryDto, StartReturnDto } from './dto/delivery.dto';
 import { SmsService } from './sms.service';
 
 @Injectable()
@@ -449,6 +449,113 @@ export class DeliveryService {
     };
   }
 
+  async retryDelivery(
+    orderId: string,
+    dto: RetryDeliveryDto,
+    user: User,
+    key: string | undefined,
+  ) {
+    if (user.role !== Role.MANAGER && user.role !== Role.ADMIN) {
+      throw ApiException.forbidden('FORBIDDEN', 'Chỉ MANAGER hoặc ADMIN được quyết định giao lại');
+    }
+
+    const result = await this.idempotency.execute(
+      user.id,
+      `POST:/orders/${orderId}/delivery/retry`,
+      key,
+      { orderId, ...dto },
+      async (tx) => {
+        const order = await tx.order.findUnique({
+          where: { id: orderId },
+          include: { packages: true },
+        });
+        if (!order) throw ApiException.notFound('Không tìm thấy đơn hàng');
+        if (order.status !== OrderStatus.DELIVERY_FAILED) {
+          throw ApiException.conflict(
+            'ORDER_NOT_RETRYABLE',
+            'Chỉ đơn DELIVERY_FAILED mới được quyết định giao lại',
+          );
+        }
+
+        const assignment = await tx.manifestItem.findFirst({
+          where: {
+            package: { is: { orderId: order.id } },
+            manifest: {
+              is: {
+                trip: { is: { status: TripStatus.ARRIVED } },
+              },
+            },
+          },
+          include: { manifest: { include: { trip: true } } },
+        });
+        if (!assignment) {
+          throw ApiException.conflict(
+            'RETURN_OR_RETRY_TRIP_NOT_FOUND',
+            'Không tìm thấy chuyến đã đến bến đích chứa kiện hàng để phân công giao lại',
+          );
+        }
+
+        const orderItems = await tx.manifestItem.findMany({
+          where: {
+            manifestId: assignment.manifestId,
+            package: { is: { orderId: order.id } },
+          },
+        });
+        if (
+          orderItems.length !== order.packageCount ||
+          orderItems.some((item) => item.status !== 'UNLOADED')
+        ) {
+          throw ApiException.conflict(
+            'PACKAGES_NOT_UNLOADED',
+            'Tất cả kiện của đơn phải được dỡ tại bến đích trước khi giao lại',
+          );
+        }
+
+        const updatedOrder = await tx.order.update({
+          where: { id: order.id },
+          data: { status: OrderStatus.OUT_FOR_DELIVERY, version: { increment: 1 } },
+        });
+        await tx.orderStatusHistory.create({
+          data: {
+            orderId: order.id,
+            changedById: user.id,
+            fromStatus: OrderStatus.DELIVERY_FAILED,
+            toStatus: OrderStatus.OUT_FOR_DELIVERY,
+            reason: dto.note ?? 'Quản lý duyệt giao lại',
+          },
+        });
+        const notification = await tx.notification.create({
+          data: {
+            userId: order.customerId,
+            orderId: order.id,
+            type: NotificationType.DELIVERY,
+            title: 'Đơn hàng được sắp xếp giao lại',
+            body: `Đơn ${order.trackingCode} sẽ được giao lại`,
+            resourceType: 'order',
+            resourceId: order.id,
+          },
+        });
+        return {
+          order: updatedOrder,
+          trackingCode: order.trackingCode,
+          previousStatus: OrderStatus.DELIVERY_FAILED,
+          notification,
+        };
+      },
+    );
+
+    this.emitNotificationIfNew(result.notification);
+    this.realtime.emitToOrder(orderId, 'order:status_changed', {
+      orderId,
+      trackingCode: result.trackingCode,
+      fromStatus: result.previousStatus,
+      toStatus: OrderStatus.OUT_FOR_DELIVERY,
+      actorId: user.id,
+      reason: dto.note ?? 'Quản lý duyệt giao lại',
+    }, result.order.version);
+    return this.toOrderResponse(result.order);
+  }
+
   async startReturn(
     orderId: string,
     dto: StartReturnDto,
@@ -466,10 +573,10 @@ export class DeliveryService {
       async (tx) => {
         const order = await tx.order.findUnique({ where: { id: orderId } });
         if (!order) throw ApiException.notFound('Không tìm thấy đơn hàng');
-        if (order.status !== OrderStatus.DELIVERY_FAILED && order.status !== OrderStatus.INCIDENT_HOLD) {
+        if (order.status !== OrderStatus.DELIVERY_FAILED) {
           throw ApiException.conflict(
             'ORDER_NOT_RETURNABLE',
-            'Chỉ hoàn hàng khi đơn giao thất bại hoặc đang bị giữ do sự cố',
+            'Chỉ đơn DELIVERY_FAILED mới được khởi tạo hoàn trực tiếp; INCIDENT_HOLD phải được giải quyết qua quy trình sự cố',
           );
         }
         const updated = await tx.order.update({
@@ -508,6 +615,81 @@ export class DeliveryService {
       toStatus: OrderStatus.RETURNING,
       actorId: user.id,
       reason: dto.reason,
+    }, result.order.version);
+    return this.toOrderResponse(result.order);
+  }
+
+  async completeReturn(
+    orderId: string,
+    dto: CompleteReturnDto,
+    user: User,
+    key: string | undefined,
+  ) {
+    if (user.role !== Role.MANAGER && user.role !== Role.ADMIN) {
+      throw ApiException.forbidden('FORBIDDEN', 'Chỉ MANAGER hoặc ADMIN được xác nhận hoàn hàng');
+    }
+
+    const result = await this.idempotency.execute(
+      user.id,
+      `POST:/orders/${orderId}/return/complete`,
+      key,
+      { orderId, ...dto },
+      async (tx) => {
+        const order = await tx.order.findUnique({ where: { id: orderId } });
+        if (!order) throw ApiException.notFound('Không tìm thấy đơn hàng');
+        if (order.status !== OrderStatus.RETURNING) {
+          throw ApiException.conflict(
+            'ORDER_NOT_RETURNING',
+            'Chỉ đơn RETURNING mới được xác nhận đã hoàn về bến gửi',
+          );
+        }
+
+        const now = new Date();
+        const updatedOrder = await tx.order.update({
+          where: { id: order.id },
+          data: {
+            status: OrderStatus.RETURNED,
+            returnedAt: now,
+            version: { increment: 1 },
+          },
+        });
+        await tx.orderStatusHistory.create({
+          data: {
+            orderId: order.id,
+            changedById: user.id,
+            fromStatus: OrderStatus.RETURNING,
+            toStatus: OrderStatus.RETURNED,
+            reason: dto.confirmationNote,
+          },
+        });
+        const notification = await tx.notification.create({
+          data: {
+            userId: order.customerId,
+            orderId: order.id,
+            type: NotificationType.ORDER_STATUS,
+            title: 'Đã hoàn hàng về bến gửi',
+            body: `Đơn ${order.trackingCode} đã được hoàn về bến gửi`,
+            resourceType: 'order',
+            resourceId: order.id,
+          },
+        });
+        return {
+          order: updatedOrder,
+          trackingCode: order.trackingCode,
+          previousStatus: OrderStatus.RETURNING,
+          notification,
+        };
+      },
+    );
+
+    this.emitNotificationIfNew(result.notification);
+    this.realtime.emitToOrder(orderId, 'order:status_changed', {
+      orderId,
+      trackingCode: result.trackingCode,
+      fromStatus: result.previousStatus,
+      toStatus: OrderStatus.RETURNED,
+      actorId: user.id,
+      reason: dto.confirmationNote,
     }, result.order.version);
     return this.toOrderResponse(result.order);
   }
