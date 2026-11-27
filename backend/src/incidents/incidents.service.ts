@@ -236,51 +236,12 @@ export class IncidentsService {
     if (user.role !== Role.MANAGER && user.role !== Role.ADMIN) {
       throw ApiException.forbidden('FORBIDDEN', 'Chỉ MANAGER hoặc ADMIN được xử lý sự cố');
     }
+
     const result = await this.prisma.$transaction(async (tx) => {
       const incident = await tx.incident.findUnique({ where: { id } });
       if (!incident) throw ApiException.notFound('Không tìm thấy sự cố');
       if (incident.status === IncidentStatus.RESOLVED || incident.status === IncidentStatus.CLOSED) {
         throw ApiException.conflict('INCIDENT_ALREADY_CLOSED', 'Sự cố đã được xử lý hoặc đóng');
-      }
-
-      let orderStatusChanged: { from: OrderStatus; to: OrderStatus; orderId: string; trackingCode: string; version: number } | null = null;
-      if (dto.status === IncidentStatus.RESOLVED && incident.orderId) {
-        const order = await tx.order.findUnique({ where: { id: incident.orderId } });
-        if (order && order.status === OrderStatus.INCIDENT_HOLD) {
-          if (!dto.orderResolution) {
-            throw ApiException.badRequest(
-              'VALIDATION_ERROR',
-              'Khi xử lý xong sự cố của đơn hàng, phải chọn orderResolution=RESUME hoặc RETURN',
-            );
-          }
-          const target =
-            dto.orderResolution === 'RETURN'
-              ? OrderStatus.RETURNING
-              : incident.orderPreviousStatus ?? OrderStatus.IN_TRANSIT;
-          if (target === OrderStatus.INCIDENT_HOLD) {
-            throw ApiException.conflict('INVALID_ORDER_RESOLUTION', 'Không thể khôi phục về INCIDENT_HOLD');
-          }
-          const updatedOrder = await tx.order.update({
-            where: { id: order.id },
-            data: { status: target, version: { increment: 1 } },
-          });
-          await tx.orderStatusHistory.create({
-            data: {
-              orderId: order.id,
-              changedById: user.id,
-              fromStatus: OrderStatus.INCIDENT_HOLD,
-              toStatus: target,
-              reason: dto.resolution,
-            },
-          });
-          orderStatusChanged = {
-            from: OrderStatus.INCIDENT_HOLD,
-            to: target,
-            orderId: order.id,
-            trackingCode: order.trackingCode,
-            version: updatedOrder.version,
-          };
-        }
       }
 
       const updated = await tx.incident.update({
@@ -291,6 +252,67 @@ export class IncidentsService {
           resolution: dto.resolution,
         },
       });
+
+      let orderStatusChanged: {
+        from: OrderStatus;
+        to: OrderStatus;
+        orderId: string;
+        trackingCode: string;
+        version: number;
+      } | null = null;
+
+      if (dto.status === IncidentStatus.RESOLVED && incident.orderId) {
+        const order = await tx.order.findUnique({ where: { id: incident.orderId } });
+        if (order && order.status === OrderStatus.INCIDENT_HOLD) {
+          if (!dto.orderResolution) {
+            throw ApiException.badRequest(
+              'VALIDATION_ERROR',
+              'Khi xử lý xong sự cố của đơn hàng, phải chọn orderResolution=RESUME hoặc RETURN',
+            );
+          }
+
+          const otherOpenIncidents = await tx.incident.count({
+            where: {
+              orderId: order.id,
+              id: { not: incident.id },
+              status: { in: [IncidentStatus.OPEN, IncidentStatus.IN_PROGRESS] },
+            },
+          });
+
+          // Do not release the order while another incident still requires action.
+          if (otherOpenIncidents === 0) {
+            const target =
+              dto.orderResolution === 'RETURN'
+                ? OrderStatus.RETURNING
+                : incident.orderPreviousStatus ?? OrderStatus.IN_TRANSIT;
+            if (target === OrderStatus.INCIDENT_HOLD) {
+              throw ApiException.conflict('INVALID_ORDER_RESOLUTION', 'Không thể khôi phục về INCIDENT_HOLD');
+            }
+
+            const updatedOrder = await tx.order.update({
+              where: { id: order.id },
+              data: { status: target, version: { increment: 1 } },
+            });
+            await tx.orderStatusHistory.create({
+              data: {
+                orderId: order.id,
+                changedById: user.id,
+                fromStatus: OrderStatus.INCIDENT_HOLD,
+                toStatus: target,
+                reason: dto.resolution,
+              },
+            });
+            orderStatusChanged = {
+              from: OrderStatus.INCIDENT_HOLD,
+              to: target,
+              orderId: order.id,
+              trackingCode: order.trackingCode,
+              version: updatedOrder.version,
+            };
+          }
+        }
+      }
+
       const customerNotification = incident.orderId
         ? await tx.order.findUnique({ where: { id: incident.orderId } }).then((order) =>
             order
@@ -308,6 +330,7 @@ export class IncidentsService {
               : null,
           )
         : null;
+
       return { updated, orderStatusChanged, customerNotification };
     });
 
