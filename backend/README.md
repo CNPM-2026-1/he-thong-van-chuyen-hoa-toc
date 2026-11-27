@@ -183,6 +183,8 @@ Quy tắc nghiệp vụ:
 | POST | `/api/v1/orders/:orderId/delivery/confirm` | DRIVER được phân công + `Idempotency-Key` |
 | POST | `/api/v1/orders/:orderId/delivery/failed` | DRIVER được phân công + `Idempotency-Key` |
 | POST | `/api/v1/orders/:orderId/return` | MANAGER, ADMIN + `Idempotency-Key` |
+| POST | `/api/v1/orders/:orderId/delivery/retry` | MANAGER, ADMIN + `Idempotency-Key` |
+| POST | `/api/v1/orders/:orderId/return/complete` | MANAGER, ADMIN + `Idempotency-Key` |
 | GET | `/api/v1/cod/transactions` | MANAGER, ADMIN |
 | POST | `/api/v1/cod/reconciliations` | MANAGER, ADMIN + `Idempotency-Key` |
 | GET/POST | `/api/v1/incidents` | DRIVER, MANAGER, ADMIN (POST yêu cầu `Idempotency-Key`) |
@@ -199,6 +201,8 @@ Luồng giao hàng:
 - OTP 6 chữ số, hiệu lực 5 phút, tối đa 5 lần thử; DB lưu HMAC hash và AES-256-GCM ciphertext. OTP không trả trong response.
 - Local development không cấu hình SMS provider sẽ ghi OTP vào log backend; production sẽ trả 503 nếu thiếu SMS provider.
 - Giao thành công cần OTP hợp lệ; nếu Order có COD, `codCollectedVnd` phải khớp `codAmountVnd`. Backend tạo DeliveryAttempt, COD transaction, cập nhật Order DELIVERED và phát event.
+- Quản lý có thể duyệt giao lại đơn `DELIVERY_FAILED` khi chuyến đã `ARRIVED` và toàn bộ kiện đã `UNLOADED`; sau khi duyệt, DRIVER tiếp tục yêu cầu OTP.
+- Hoàn trực tiếp chỉ bắt đầu từ `DELIVERY_FAILED`. Đơn `INCIDENT_HOLD` phải được giải quyết qua Incident; quản lý chọn `RETURN` ở bước xử lý cuối cùng. Khi hàng thực sự về bến gửi, quản lý xác nhận `RETURNED`, cập nhật `returnedAt` và ghi OrderStatusHistory.
 - Ảnh chứng minh/ảnh sự cố dùng presigned PUT URL lên MinIO/S3-compatible storage; API chỉ lưu object key và metadata.
 
 COD:
