@@ -13,6 +13,12 @@ import { TripsModule } from './trips/trips.module';
 import { TrackingModule } from './tracking/tracking.module';
 import { RealtimeModule } from './realtime/realtime.module';
 import { ManifestModule } from './manifest/manifest.module';
+import { DeliveryModule } from './delivery/delivery.module';
+import { CodModule } from './cod/cod.module';
+import { IncidentsModule } from './incidents/incidents.module';
+import { StatisticsModule } from './statistics/statistics.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { MediaModule } from './media/media.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 
@@ -31,6 +37,12 @@ import { RolesGuard } from './common/guards/roles.guard';
     TrackingModule,
     RealtimeModule,
     ManifestModule,
+    DeliveryModule,
+    CodModule,
+    IncidentsModule,
+    StatisticsModule,
+    NotificationsModule,
+    MediaModule,
   ],
   providers: [
     // Mặc định mọi route đều cần đăng nhập; dùng @Public() để mở.
