@@ -6352,6 +6352,7 @@ paths:
                 ordersInTransit: 85
                 deliveredOrders: 980
                 returnedOrders: 12
+                returnsInProgress: 2
                 totalCodVnd: 125000000
                 openIncidents: 3
         '400':
@@ -8326,6 +8327,9 @@ components:
         returnedOrders:
           type: integer
           minimum: 0
+        returnsInProgress:
+          type: integer
+          minimum: 0
         totalCodVnd:
           type: integer
           minimum: 0
@@ -8340,6 +8344,7 @@ components:
       - ordersInTransit
       - deliveredOrders
       - returnedOrders
+      - returnsInProgress
       - totalCodVnd
       - openIncidents
       example: *id054
