@@ -31,7 +31,7 @@ Các file `.puml` là mã nguồn PlantUML. Có thể mở bằng PlantUML exten
 - OpenAPI: 49 paths / 71 operations; gồm Notifications, delivery retry và return completion.
 - Postman: 71 requests và 2 environments local/staging.
 - Prism mock: cấu hình tại `docs/mock-server/`; dùng chung `docs/openapi.yaml`.
-- CI tài liệu: `.github/workflows/design-contract-ci.yml` kiểm tra Prism/OpenAPI, số lượng sơ đồ, JSON Postman và environments. CI backend riêng tại `.github/workflows/backend-ci.yml`.
+- CI tài liệu: `.github/workflows/design-contract-ci.yml` kiểm tra Prism/OpenAPI, cú pháp 15 sơ đồ PlantUML, JSON Postman và environments. CI backend riêng tại `.github/workflows/backend-ci.yml`.
 
 ## Kiểm tra trước khi mở PR
 
