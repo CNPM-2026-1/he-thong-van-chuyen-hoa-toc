@@ -1,0 +1,22 @@
+@startuml
+left to right direction
+skinparam shadowing false
+actor ADMIN
+rectangle "Quản trị hệ thống" {
+  usecase "Đăng nhập quản trị" as A
+  usecase "Tạo / khóa / mở khóa tài khoản" as B
+  usecase "Quản lý vai trò và quyền" as C
+  usecase "Quản lý danh mục toàn hệ thống" as D
+  usecase "Xem nhật ký hoạt động" as E
+  usecase "Cấu hình tích hợp / hệ thống" as F
+  usecase "Theo dõi tình trạng dịch vụ" as G
+}
+ADMIN --> A
+ADMIN --> B
+ADMIN --> C
+ADMIN --> D
+ADMIN --> E
+ADMIN --> F
+ADMIN --> G
+B .> C : <<include>>
+@enduml
