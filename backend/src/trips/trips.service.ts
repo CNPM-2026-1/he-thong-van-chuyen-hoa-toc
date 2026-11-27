@@ -235,7 +235,9 @@ export class TripsService {
               where: {
                 id: { not: trip.id },
                 vehicleId: trip.vehicleId,
-                status: { in: ACTIVE_TRIP_STATUSES },
+                status: {
+                  in: [TripStatus.DISPATCHED, TripStatus.IN_TRANSIT, TripStatus.ARRIVED],
+                },
               },
             }),
             tx.vehicle.findUnique({ where: { id: trip.vehicleId } }),
