@@ -7,11 +7,11 @@ Phạm vi: Đầu mục 4 - TV7 và TV8, dự án **Hệ thống quản lý quy 
 | Tài liệu | Nội dung | Phụ trách |
 |---|---|---|
 | [architecture.md](architecture.md) | Kiến trúc logic, thành phần, luồng kết nối và các quyết định thiết kế | TV7 |
-| [diagrams/](diagrams/) | PlantUML: kiến trúc, 2 deployment, use case tổng quát + từng actor, state đơn hàng, 5 sequence | TV7 |
-| [openapi.yaml](openapi.yaml) | Hợp đồng REST API cho Sprint 1 và các sprint nghiệp vụ tiếp theo | TV8 |
+| [diagrams/](diagrams/) | Đủ 15 file PlantUML: kiến trúc, 2 deployment, use case tổng quát + 5 tác nhân, state đơn hàng, 5 sequence | TV7 |
+| [openapi.yaml](openapi.yaml) | OpenAPI 3.1; hiện có 47 paths / 69 operations (gồm 2 route Notifications bổ sung) | TV8 |
 | [realtime-events.md](realtime-events.md) | Quy ước Socket.IO, rooms, event name, payload, lỗi và reconnect | TV8 |
 | [mock-server/README.md](mock-server/README.md) | Cài đặt/chạy Prism mock server | TV8 |
-| [postman/](postman/) | Collection và 2 environment local/server | TV8 |
+| [postman/](postman/) | Collection 69 requests và 2 environments local/server | TV8 |
 | [api-contract.md](api-contract.md) | Quy ước dùng chung và ví dụ response cơ bản cho app/web/backend | TV7 + TV8 đề xuất chia sẻ |
 
 ## Cách xem sơ đồ
@@ -25,9 +25,11 @@ Các file `.puml` là mã nguồn PlantUML. Có thể mở bằng PlantUML exten
 3. Backend triển khai REST trước; Socket.IO dùng cùng access token và authorization theo resource.
 4. Khi backend có endpoint thật, chuyển environment Postman từ mock URL sang API local/server và kiểm tra contract.
 
-## Trạng thái tài liệu và kiểm tra\n\n- Bộ PlantUML: 15 file nguồn đã được đưa vào `docs/diagrams/`.\n- OpenAPI: 47 paths / 69 operations; 2 route Notifications được bổ sung cho backend Sprint 2.\n- Postman: 69 requests; bổ sung danh mục Notifications (list + mark-read).\n- Prism mock: cấu hình tại `docs/mock-server/`; dùng chung `docs/openapi.yaml`.\n- CI tài liệu: `.github/workflows/design-contract-ci.yml` kiểm tra Prism/OpenAPI, số lượng sơ đồ, JSON Postman và environments. CI backend riêng tại `.github/workflows/backend-ci.yml`.\n\n## Kiểm tra trước khi mở PR
+## Trạng thái tài liệu và kiểm tra
 
-- Chạy `npm install` rồi `npm run validate` tại `docs/mock-server` để kiểm tra OpenAPI.
+- Bộ PlantUML: 15 file nguồn đã được đưa vào `docs/diagrams/`.\n- OpenAPI: 47 paths / 69 operations; 2 route Notifications được bổ sung cho backend Sprint 2.\n- Postman: 69 requests; bổ sung danh mục Notifications (list + mark-read).\n- Prism mock: cấu hình tại `docs/mock-server/`; dùng chung `docs/openapi.yaml`.\n- CI tài liệu: `.github/workflows/design-contract-ci.yml` kiểm tra Prism/OpenAPI, số lượng sơ đồ, JSON Postman và environments. CI backend riêng tại `.github/workflows/backend-ci.yml`.\n\n## Kiểm tra trước khi mở PR
+
+- Chạy `npm install` rồi `npm run validate` tại `docs/mock-server`; script khởi chạy Prism mock tạm thời và gọi thử `GET /api/v1/stations` để xác nhận OpenAPI parse được.
 - Chạy `npm run mock` tại `docs/mock-server`, sau đó thử tối thiểu các luồng login, báo giá/tạo đơn, tiếp nhận, manifest, giao OTP và tracking bằng Postman.
 - Preview toàn bộ file `.puml`; giữ mã nguồn PlantUML trong repository cùng ảnh xuất cho báo cáo nếu cần.
 - Đối chiếu các role, phạm vi dữ liệu theo resource, enum trạng thái và schema Prisma với TV1/TV5 trước khi merge.
