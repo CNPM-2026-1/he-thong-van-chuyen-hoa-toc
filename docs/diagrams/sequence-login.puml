@@ -1,0 +1,17 @@
+@startuml
+actor CUSTOMER
+participant "Mobile App" as App
+participant "NestJS Auth API" as API
+database "PostgreSQL" as DB
+
+CUSTOMER -> App : Nhập identifier + password
+App -> API : POST /api/v1/auth/login
+API -> DB : Tìm user theo email/phone
+DB --> API : User + passwordHash + role/status
+API -> API : So khớp bcrypt, kiểm tra ACTIVE
+API -> API : Tạo accessToken + refreshToken
+API -> DB : Lưu hash/metadata refresh token
+API --> App : 200 {accessToken, refreshToken, user}
+App -> App : Lưu token an toàn
+App --> CUSTOMER : Hiển thị màn hình theo role
+@enduml
