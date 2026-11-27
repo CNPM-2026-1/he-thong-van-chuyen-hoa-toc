@@ -141,51 +141,118 @@ Mỗi module gồm `*.controller.ts` (route + Swagger), `*.service.ts` (nghiệp
 - Khi deploy, nhớ đổi `JWT_ACCESS_SECRET` và `JWT_REFRESH_SECRET` thành chuỗi ngẫu nhiên dài, và giới hạn `CORS_ORIGINS`.
 
 
-## Sprint 2 – Chuyến xe và GPS (TV7)
+## Sprint 2 – Bộ 2 (TV7 Linh + TV8 Kiên)
 
-Lưu ý tích hợp CSDL: `trips`, `trip_locations`, `trip_status_history` và `idempotency_records` là các bảng bổ sung ở Sprint 2 trên PostgreSQL. `trip_status_history` và `idempotency_records` là phần mở rộng kỹ thuật để audit/retry; cần gửi TV5 cập nhật ERD và từ điển dữ liệu trước khi chốt CSDL toàn nhóm.
+Nhánh triển khai: `feature/sprint2-bo2-backend`, tạo trên nền `feature/tv7-trips-tracking` (backend TV1). Không merge thẳng vào `develop` khi nhánh nền backend của TV1 chưa được tích hợp vào nhánh chính.
 
-Các endpoint đã được bổ sung trong nhánh `feature/tv7-trips-tracking`:
+### Quyết định dữ liệu Manifest tạm thời
+
+Mỗi dòng manifest đại diện cho **một kiện Package**. Một request `POST /trips/:tripId/manifest/items` nhận `orderId`; backend tìm toàn bộ Package thuộc Order và tạo một ManifestItem cho từng kiện. Cách này bám mô hình `KienHang` và `ChiTietPhieuKe` trong ERD/SQL của nhánh `database`.
+
+Đây là quyết định triển khai tạm của Bộ 2, cần TV5/nhóm xác nhận trước khi merge. Bộ 1 phải tạo đủ Package khi tạo Order; nếu `packages.length` khác `packageCount`, backend từ chối thêm đơn vào manifest.
+
+### TV7 – Chuyến xe, manifest, GPS và realtime
 
 | Method | Endpoint | Quyền |
 |---|---|---|
-| GET | `/api/v1/trips` | DRIVER, MANAGER, ADMIN (STAFF đang khóa đến khi có phân công bến) |
-| POST | `/api/v1/trips` | MANAGER, ADMIN + `Idempotency-Key` UUID |
+| GET | `/api/v1/trips` | DRIVER được phân công, MANAGER, ADMIN |
+| POST | `/api/v1/trips` | MANAGER, ADMIN + `Idempotency-Key` |
 | GET | `/api/v1/trips/:tripId` | DRIVER được phân công, MANAGER, ADMIN |
 | PATCH | `/api/v1/trips/:tripId/status` | DRIVER được phân công, MANAGER, ADMIN |
-| POST | `/api/v1/trips/:tripId/locations` | DRIVER được phân công + `Idempotency-Key` UUID |
-| GET | `/api/v1/trips/:tripId/locations/latest` | DRIVER được phân công, MANAGER, ADMIN |
+| GET | `/api/v1/trips/:tripId/manifest` | DRIVER được phân công, MANAGER, ADMIN |
+| POST | `/api/v1/trips/:tripId/manifest/items` | MANAGER, ADMIN + `Idempotency-Key`; body `{ orderId }` |
+| PATCH | `/api/v1/manifest/items/:itemId` | DRIVER được phân công, MANAGER, ADMIN |
+| POST | `/api/v1/trips/:tripId/locations` | DRIVER được phân công + `Idempotency-Key` |
+| GET | `/api/v1/trips/:tripId/locations/latest` | DRIVER được phân công, MANAGER, ADMIN; CUSTOMER chỉ khi có Order của mình trên chuyến IN_TRANSIT |
 
-Các trạng thái chuyến được kiểm tra ở backend:
-- `PLANNED -> BOARDING -> DISPATCHED -> IN_TRANSIT -> ARRIVED -> COMPLETED`.
-- Chỉ cho phép hủy từ `PLANNED` hoặc `BOARDING`.
-- Mọi thay đổi trạng thái và người thực hiện được lưu trong `trip_status_history`.
-- Khi `DISPATCHED`, xe chuyển sang `IN_USE`; khi chuyến kết thúc/hủy, backend kiểm tra các chuyến đang hoạt động khác trước khi đưa xe về `AVAILABLE`.
-- Khi tạo chuyến, backend kiểm tra tuyến, xe, tài xế, trạng thái hoạt động và xung đột lịch phân công.
+Quy tắc nghiệp vụ:
+- Chuyển trạng thái chuyến theo chuỗi `PLANNED → BOARDING → DISPATCHED → IN_TRANSIT → ARRIVED → COMPLETED`; chỉ hủy từ PLANNED/BOARDING.
+- Không xuất bến nếu manifest rỗng hoặc còn kiện chưa LOADED.
+- Khi chuyến chuyển sang IN_TRANSIT, các Order trên manifest chuyển sang IN_TRANSIT và được ghi OrderStatusHistory.
+- Chỉ cho dỡ kiện khi trip ARRIVED; Order chuyển AT_DESTINATION khi toàn bộ kiện của Order đã UNLOADED.
+- Kiện MISSING/DAMAGED được ghi sự cố và đưa Order vào INCIDENT_HOLD.
+- GPS chỉ nhận từ tài xế được phân công khi chuyến IN_TRANSIT; backend lưu tọa độ trước khi phát `trip:location_updated`.
+- REST write operations quan trọng yêu cầu `Idempotency-Key` UUID; cùng actor/operation/key/payload trong 24 giờ sẽ nhận response cũ, dùng key với payload khác trả 409.
 
-GPS:
-- Tài xế chỉ gửi vị trí cho chuyến được phân công và đang ở trạng thái `IN_TRANSIT`.
-- Tọa độ được validate theo giới hạn vĩ độ/kinh độ; thời điểm GPS không được vượt quá 2 phút trong tương lai.
-- Lịch sử tọa độ lưu trong `trip_locations`; endpoint latest lấy bản ghi mới nhất theo `recordedAt`.
+### TV8 – Giao hàng, OTP, COD, sự cố và Dashboard
 
-### Chạy migration và kiểm tra
+| Method | Endpoint | Quyền |
+|---|---|---|
+| POST | `/api/v1/orders/:orderId/delivery/start` | DRIVER được phân công + `Idempotency-Key` |
+| POST | `/api/v1/orders/:orderId/delivery/otp` | DRIVER được phân công + `Idempotency-Key` |
+| POST | `/api/v1/orders/:orderId/delivery/confirm` | DRIVER được phân công + `Idempotency-Key` |
+| POST | `/api/v1/orders/:orderId/delivery/failed` | DRIVER được phân công + `Idempotency-Key` |
+| POST | `/api/v1/orders/:orderId/return` | MANAGER, ADMIN + `Idempotency-Key` |
+| GET | `/api/v1/cod/transactions` | MANAGER, ADMIN |
+| POST | `/api/v1/cod/reconciliations` | MANAGER, ADMIN + `Idempotency-Key` |
+| GET/POST | `/api/v1/incidents` | DRIVER, MANAGER, ADMIN (POST yêu cầu `Idempotency-Key`) |
+| GET/PATCH | `/api/v1/incidents/:incidentId` | GET: DRIVER, MANAGER, ADMIN; PATCH: MANAGER, ADMIN |
+| GET | `/api/v1/statistics/overview` | MANAGER, ADMIN |
+| GET | `/api/v1/statistics/orders` | MANAGER, ADMIN |
+| GET | `/api/v1/statistics/cod` | MANAGER, ADMIN |
+| POST | `/api/v1/media/presigned-uploads` | Người dùng đã đăng nhập + `Idempotency-Key` |
+| GET | `/api/v1/notifications` | Tài khoản hiện tại |
+| PATCH | `/api/v1/notifications/:notificationId/read` | Chủ sở hữu thông báo |
 
-Từ thư mục `backend/`:
+Luồng giao hàng:
+- DRIVER chỉ bắt đầu giao sau khi chuyến ARRIVED và toàn bộ kiện của Order đã UNLOADED.
+- OTP 6 chữ số, hiệu lực 5 phút, tối đa 5 lần thử; DB lưu HMAC hash và AES-256-GCM ciphertext. OTP không trả trong response.
+- Local development không cấu hình SMS provider sẽ ghi OTP vào log backend; production sẽ trả 503 nếu thiếu SMS provider.
+- Giao thành công cần OTP hợp lệ; nếu Order có COD, `codCollectedVnd` phải khớp `codAmountVnd`. Backend tạo DeliveryAttempt, COD transaction, cập nhật Order DELIVERED và phát event.
+- Ảnh chứng minh/ảnh sự cố dùng presigned PUT URL lên MinIO/S3-compatible storage; API chỉ lưu object key và metadata.
+
+COD:
+- Expected amount được tính từ các transaction được chọn thuộc đúng chuyến và còn PENDING_REMITTANCE.
+- Chênh lệch bằng 0: MATCHED và transaction được chuyển RECONCILED.
+- Có chênh lệch: MISMATCH_PENDING_REVIEW; transaction vẫn pending để có thể tạo lần đối soát tiếp theo sau khi rà soát.
+
+Sự cố:
+- Khi sự cố gắn với Order được tạo, Order chuyển INCIDENT_HOLD và ghi trạng thái trước đó.
+- Khi RESOLVED, quản lý chọn RESUME hoặc RETURN; Order chỉ rời INCIDENT_HOLD khi không còn sự cố OPEN/IN_PROGRESS khác.
+
+### Realtime events
+
+Gateway dùng Socket.IO namespace mặc định, handshake `auth.token` là access JWT. Các event được phát sau khi dữ liệu REST/DB được lưu:
+- `trip:location_updated`, `trip:status_changed`
+- `manifest:updated`, `manifest:item_scanned`
+- `order:status_changed`, `delivery:completed`
+- `incident:created`, `incident:updated`
+- `cod:reconciled`, `notification:new`
+
+Envelope: `{ eventId, occurredAt, resourceVersion, data }`. Client không được tự phát các event server-authoritative.
+
+### Migration, môi trường và kiểm tra
+
+Các migration Sprint 2:
+- `20261127070000_add_trips_tracking`
+- `20261127080000_add_idempotency_records`
+- `20261127100000_add_sprint2_operations`
+
+Chạy local từ thư mục `backend/`:
 
 ```bash
+docker compose up -d
+npm install
 npx prisma format
 npx prisma validate
 npm run db:deploy
 npm run prisma:generate
+npm run db:seed
 npm run build
 npm run start:dev
 ```
 
-Migration `20261127070000_add_trips_tracking` và `20261127080000_add_idempotency_records` đã được thêm vào nhánh này; lệnh `db:deploy` áp dụng migration có sẵn mà không tạo migration trùng.
+- PostgreSQL: `localhost:5432`.
+- MinIO S3 API: `http://localhost:9000`; Console: `http://localhost:9001`; bucket `hoatoc-media`; local credentials mặc định `minioadmin/minioadmin`.
+- Swagger: `http://localhost:3000/api/docs`.
+- Cấu hình OTP và storage trong `.env.example`. Thay toàn bộ secret/credentials mặc định trước khi triển khai thật.
+- `npm install` phải được chạy sau khi pull nhánh này để cập nhật `package-lock.json`, vì nhánh đã bổ sung Socket.IO dependencies. Commit file lock được sinh trước khi dùng `npm ci`.
+- Workflow `.github/workflows/backend-ci.yml` được thêm để chạy Prisma format/validate/generate và NestJS build trên GitHub Actions.
 
-### Giới hạn cần xử lý trước khi mở quyền đầy đủ
+### Các giới hạn tích hợp còn lại cần nhóm xác nhận
 
-- Schema hiện chưa có bảng/quan hệ phân công STAFF theo bến, vì vậy API danh sách/chi tiết chuyến và vị trí tạm từ chối STAFF thay vì trả dữ liệu toàn hệ thống.
-- Chưa có quan hệ Order–Trip/Manifest nên chưa thể xác minh CUSTOMER đang theo dõi chuyến có chứa đơn của mình; endpoint latest tạm từ chối CUSTOMER.
-- Manifest/Package chưa được triển khai. Chờ nhóm thống nhất mỗi dòng manifest là đơn hàng hay từng kiện hàng.
-- Socket.IO Gateway chưa được thêm vào phần này; sau khi thêm dependency `@nestjs/websockets`, `@nestjs/platform-socket.io`, `socket.io`, cần cập nhật `package-lock.json`, rồi phát `trip:location_updated` sau khi lưu GPS thành công.
+- Mô hình mỗi ManifestItem là một Package cần TV5/nhóm duyệt; ERD, data dictionary và tài liệu SQL Server của nhánh `database` cần cập nhật đồng bộ với PostgreSQL/Prisma.
+- Schema hiện chưa có bảng phân công STAFF theo bến. Vì vậy, một số API và room vận hành từ chối STAFF thay vì cấp quyền xem rộng. Cần bổ sung bảng assignment nếu nhóm muốn STAFF thao tác manifest/sự cố theo bến.
+- SMS provider cần cấu hình URL/API key thật; local chỉ log OTP để demo.
+- Media metadata được xác minh theo user/purpose/objectKey; cần kiểm tra object thực tế trên storage trong bước tích hợp cuối cùng trước khi coi ảnh đã upload hợp lệ.
+- Chưa chạy xác nhận `npm run build`/Prisma validate trực tiếp từ máy phát triển trong phiên này; cần xem GitHub Actions hoặc chạy các lệnh trên máy local trước khi merge.
