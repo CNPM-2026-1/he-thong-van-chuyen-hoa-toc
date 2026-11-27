@@ -590,7 +590,7 @@ model CodReconciliationItem {
   transaction    CodTransaction    @relation(fields: [transactionId], references: [id], onDelete: Restrict)
 
   @@unique([reconciliationId, transactionId])
-  @@unique([transactionId])
+  @@index([transactionId])
   @@map("cod_reconciliation_items")
 }
 
