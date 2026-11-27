@@ -13,7 +13,7 @@ export class TripsController {
   constructor(private readonly trips: TripsService) {}
 
   @Get()
-  @Roles(Role.STAFF, Role.DRIVER, Role.MANAGER, Role.ADMIN)
+  @Roles(Role.DRIVER, Role.MANAGER, Role.ADMIN)
   @ApiOperation({ summary: 'Danh sách chuyến xe' })
   list(@Query() query: ListTripsQueryDto, @CurrentUser() user: User) {
     return this.trips.list(query, user);
@@ -36,7 +36,7 @@ export class TripsController {
   }
 
   @Get(':tripId')
-  @Roles(Role.STAFF, Role.DRIVER, Role.MANAGER, Role.ADMIN)
+  @Roles(Role.DRIVER, Role.MANAGER, Role.ADMIN)
   @ApiOperation({ summary: 'Chi tiết chuyến xe' })
   get(@Param('tripId', ParseUUIDPipe) tripId: string, @CurrentUser() user: User) {
     return this.trips.get(tripId, user);
