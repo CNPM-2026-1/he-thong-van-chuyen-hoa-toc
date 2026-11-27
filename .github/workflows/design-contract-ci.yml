@@ -34,6 +34,14 @@ jobs:
         working-directory: docs/mock-server
         run: npm run validate
 
+      - name: Install PlantUML and Graphviz
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y plantuml graphviz
+
+      - name: Validate PlantUML syntax
+        run: plantuml -checkonly -failfast2 docs/diagrams/*.puml
+
       - name: Validate PlantUML, Postman and environment artifacts
         run: |
           node <<'NODE'
