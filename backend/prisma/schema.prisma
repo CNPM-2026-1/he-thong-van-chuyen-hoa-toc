@@ -67,6 +67,7 @@ model User {
   refreshTokens      RefreshToken[]
   driver             Driver?
   tripStatusChanges  TripStatusHistory[]
+  idempotencyRecords IdempotencyRecord[]
 
   @@index([role])
   @@map("users")
@@ -249,4 +250,22 @@ model TripStatusHistory {
 
   @@index([tripId, changedAt])
   @@map("trip_status_history")
+}
+
+
+model IdempotencyRecord {
+  id          String   @id @default(uuid()) @db.Uuid
+  actorId     String   @map("actor_id") @db.Uuid
+  operation   String
+  key         String
+  requestHash String   @map("request_hash")
+  response    Json     @db.JsonB
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  expiresAt   DateTime @map("expires_at") @db.Timestamptz(3)
+
+  actor User @relation(fields: [actorId], references: [id], onDelete: Cascade)
+
+  @@unique([actorId, operation, key])
+  @@index([expiresAt])
+  @@map("idempotency_records")
 }
