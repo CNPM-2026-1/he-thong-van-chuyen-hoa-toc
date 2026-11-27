@@ -178,7 +178,7 @@ export class TripsService {
   }
 
   async updateStatus(tripId: string, dto: UpdateTripStatusDto, user: User) {
-    if (![Role.DRIVER, Role.MANAGER, Role.ADMIN].includes(user.role)) {
+    if (user.role !== Role.DRIVER && user.role !== Role.MANAGER && user.role !== Role.ADMIN) {
       throw ApiException.forbidden('FORBIDDEN', 'Bạn không có quyền cập nhật trạng thái chuyến');
     }
 
@@ -245,21 +245,47 @@ export class TripsService {
           });
           const orders = new Map(manifestItems.map((item) => [item.package.order.id, item.package.order]));
           for (const order of orders.values()) {
-            if (![OrderStatus.RECEIVED, OrderStatus.WAITING_FOR_DISPATCH].includes(order.status)) {
+            if (
+              order.status !== OrderStatus.RECEIVED &&
+              order.status !== OrderStatus.WAITING_FOR_DISPATCH
+            ) {
               throw ApiException.conflict(
                 'ORDER_NOT_READY_FOR_DISPATCH',
                 `Đơn ${order.trackingCode} không ở trạng thái chờ điều phối`,
               );
             }
           }
+        }
 
+        if (dto.status === TripStatus.IN_TRANSIT) {
+          const manifest = await tx.manifest.findUnique({
+            where: { tripId: trip.id },
+            include: {
+              items: { include: { package: { include: { order: true } } } },
+            },
+          });
+          if (!manifest || manifest.items.length === 0) {
+            throw ApiException.conflict('MANIFEST_REQUIRED', 'Không tìm thấy manifest của chuyến');
+          }
+          if (manifest.items.some((item) => item.status !== ManifestItemStatus.LOADED)) {
+            throw ApiException.conflict('MANIFEST_NOT_READY', 'Tất cả kiện phải được xếp lên xe trước khi vận chuyển');
+          }
+          const orders = new Map(manifest.items.map((item) => [item.package.order.id, item.package.order]));
+          for (const order of orders.values()) {
+            if (
+              order.status !== OrderStatus.WAITING_FOR_DISPATCH &&
+              order.status !== OrderStatus.RECEIVED
+            ) {
+              throw ApiException.conflict(
+                'ORDER_NOT_READY_FOR_DISPATCH',
+                `Đơn ${order.trackingCode} không ở trạng thái chờ điều phối`,
+              );
+            }
+          }
           for (const order of orders.values()) {
             const changed = await tx.order.update({
               where: { id: order.id },
-              data: {
-                status: OrderStatus.IN_TRANSIT,
-                version: { increment: 1 },
-              },
+              data: { status: OrderStatus.IN_TRANSIT, version: { increment: 1 } },
             });
             await tx.orderStatusHistory.create({
               data: {
@@ -267,7 +293,7 @@ export class TripsService {
                 changedById: user.id,
                 fromStatus: order.status,
                 toStatus: OrderStatus.IN_TRANSIT,
-                reason: `Chuyến ${trip.code} đã xuất bến`,
+                reason: `Chuyến ${trip.code} đã bắt đầu vận chuyển`,
               },
             });
             orderEvents.push({
