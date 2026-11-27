@@ -116,6 +116,23 @@ export class IncidentsService {
           tripId = assignment.manifest.tripId;
         }
 
+        if (order && tripId) {
+          const assignedTrip = await tx.trip.findUnique({
+            where: { id: tripId },
+            include: { route: true },
+          });
+          if (!assignedTrip) throw ApiException.notFound('Không tìm thấy chuyến xe');
+          if (
+            order.originStationId !== assignedTrip.route.originStationId ||
+            order.destinationStationId !== assignedTrip.route.destinationStationId
+          ) {
+            throw ApiException.conflict(
+              'ORDER_TRIP_ROUTE_MISMATCH',
+              'Đơn hàng không thuộc tuyến của chuyến xe được gắn sự cố',
+            );
+          }
+        }
+
         if (user.role === Role.STAFF) {
           throw ApiException.forbidden(
             'ASSIGNMENT_SCOPE_NOT_CONFIGURED',
@@ -264,13 +281,6 @@ export class IncidentsService {
       if (dto.status === IncidentStatus.RESOLVED && incident.orderId) {
         const order = await tx.order.findUnique({ where: { id: incident.orderId } });
         if (order && order.status === OrderStatus.INCIDENT_HOLD) {
-          if (!dto.orderResolution) {
-            throw ApiException.badRequest(
-              'VALIDATION_ERROR',
-              'Khi xử lý xong sự cố của đơn hàng, phải chọn orderResolution=RESUME hoặc RETURN',
-            );
-          }
-
           const otherOpenIncidents = await tx.incident.count({
             where: {
               orderId: order.id,
@@ -281,6 +291,12 @@ export class IncidentsService {
 
           // Do not release the order while another incident still requires action.
           if (otherOpenIncidents === 0) {
+            if (!dto.orderResolution) {
+              throw ApiException.badRequest(
+                'VALIDATION_ERROR',
+                'Khi xử lý xong sự cố cuối cùng của đơn hàng, phải chọn orderResolution=RESUME hoặc RETURN',
+              );
+            }
             const target =
               dto.orderResolution === 'RETURN'
                 ? OrderStatus.RETURNING
