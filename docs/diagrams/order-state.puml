@@ -1,0 +1,43 @@
+@startuml
+skinparam shadowing false
+hide empty description
+[*] --> PENDING_RECEIPT : khách tạo đơn
+PENDING_RECEIPT --> RECEIVED : STAFF xác nhận nhận kiện
+RECEIVED --> WAITING_FOR_DISPATCH : kiểm tra/cân/định tuyến hoàn tất
+WAITING_FOR_DISPATCH --> IN_TRANSIT : kiện được đưa lên manifest và xe xuất bến
+IN_TRANSIT --> AT_DESTINATION : xe đến bến đích, xác nhận dỡ kiện
+AT_DESTINATION --> OUT_FOR_DELIVERY : phân công tài xế giao
+OUT_FOR_DELIVERY --> DELIVERED : OTP hợp lệ, hoàn tất giao
+OUT_FOR_DELIVERY --> DELIVERY_FAILED : người nhận vắng mặt / không thể giao
+DELIVERY_FAILED --> OUT_FOR_DELIVERY : lên lịch giao lại
+DELIVERY_FAILED --> RETURNING : quản lý quyết định hoàn hàng
+RETURNING --> RETURNED : hàng về bến gửi và bàn giao
+
+PENDING_RECEIPT --> CANCELLED : khách/nhà xe hủy hợp lệ
+RECEIVED --> CANCELLED : MANAGER hủy trước khi xuất bến
+WAITING_FOR_DISPATCH --> CANCELLED : MANAGER hủy trước khi xuất bến
+
+IN_TRANSIT --> INCIDENT_HOLD : báo sự cố, lưu previousStatus
+OUT_FOR_DELIVERY --> INCIDENT_HOLD : báo sự cố, lưu previousStatus
+INCIDENT_HOLD --> IN_TRANSIT : xử lý xong, tiếp tục hành trình
+INCIDENT_HOLD --> OUT_FOR_DELIVERY : xử lý xong, tiếp tục giao
+INCIDENT_HOLD --> RETURNING : xử lý xong, quyết định hoàn hàng
+
+DELIVERED --> [*]
+RETURNED --> [*]
+CANCELLED --> [*]
+
+note right of INCIDENT_HOLD
+Đây là trạng thái tạm giữ do sự cố.
+Hệ thống lưu trạng thái trước đó,
+incidentId, người xử lý và quyết định
+resume hoặc return. Không tự động xóa
+lịch sử trạng thái.
+end note
+
+note bottom of CANCELLED
+Không cho hủy sau khi chuyến đã xuất bến,
+ngoại trừ quy trình xử lý đặc biệt được
+MANAGER/ADMIN phê duyệt.
+end note
+@enduml
