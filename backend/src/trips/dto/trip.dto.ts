@@ -44,14 +44,4 @@ export class UpdateTripStatusDto {
   note?: string;
 }
 
-export class ListTripsQueryDto extends PaginationQueryDto {
-  @ApiPropertyOptional({ enum: TripStatus })
-  @IsOptional()
-  @IsEnum(TripStatus)
-  status?: TripStatus;
-
-  @ApiPropertyOptional({ format: 'uuid' })
-  @IsOptional()
-  @IsUUID('all')
-  routeId?: string;
-}
+export class ListTripsQueryDto extends PaginationQueryDto {}
