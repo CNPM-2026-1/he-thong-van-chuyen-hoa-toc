@@ -173,12 +173,13 @@ Từ thư mục `backend/`:
 ```bash
 npx prisma format
 npx prisma validate
-npm run db:migrate -- --name add_trips_tracking
+npm run db:deploy
+npm run prisma:generate
 npm run build
 npm run start:dev
 ```
 
-Sau khi tạo migration bằng `db:migrate`, commit cả thư mục migration được Prisma sinh. Trên môi trường tích hợp đã có migration, dùng `npm run db:deploy`.
+Migration `20261127070000_add_trips_tracking` đã được thêm vào nhánh này; lệnh `db:deploy` áp dụng migration có sẵn mà không tạo migration trùng.
 
 ### Giới hạn cần xử lý trước khi mở quyền đầy đủ
 
