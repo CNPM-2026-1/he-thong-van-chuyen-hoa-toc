@@ -143,6 +143,8 @@ Mỗi module gồm `*.controller.ts` (route + Swagger), `*.service.ts` (nghiệp
 
 ## Sprint 2 – Chuyến xe và GPS (TV7)
 
+Lưu ý tích hợp CSDL: `trips`, `trip_locations`, `trip_status_history` và `idempotency_records` là các bảng bổ sung ở Sprint 2 trên PostgreSQL. `trip_status_history` và `idempotency_records` là phần mở rộng kỹ thuật để audit/retry; cần gửi TV5 cập nhật ERD và từ điển dữ liệu trước khi chốt CSDL toàn nhóm.
+
 Các endpoint đã được bổ sung trong nhánh `feature/tv7-trips-tracking`:
 
 | Method | Endpoint | Quyền |
