@@ -1,63 +1,92 @@
 import { Injectable } from '@nestjs/common';
 import { Role, TripStatus, User } from '@prisma/client';
 import { ApiException } from '../common/api-exception';
+import { IdempotencyService } from '../common/idempotency.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTripLocationDto } from './dto/trip-location.dto';
 
 @Injectable()
 export class TrackingService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly idempotency: IdempotencyService,
+  ) {}
 
-  async createLocation(tripId: string, dto: CreateTripLocationDto, user: User) {
+  async createLocation(
+    tripId: string,
+    dto: CreateTripLocationDto,
+    user: User,
+    idempotencyKey: string | undefined,
+  ) {
     if (user.role !== Role.DRIVER) {
       throw ApiException.forbidden('FORBIDDEN', 'Chỉ tài xế được gửi vị trí GPS');
     }
 
-    const driver = await this.prisma.driver.findFirst({
-      where: { userId: user.id, deletedAt: null, isActive: true },
-    });
-    if (!driver) {
-      throw ApiException.forbidden('FORBIDDEN', 'Tài khoản chưa có hồ sơ tài xế đang hoạt động');
-    }
+    return this.idempotency.execute(
+      user.id,
+      `POST:/trips/${tripId}/locations`,
+      idempotencyKey,
+      { tripId, ...dto },
+      async (tx) => {
+        const driver = await tx.driver.findFirst({
+          where: { userId: user.id, deletedAt: null, isActive: true },
+        });
+        if (!driver) {
+          throw ApiException.forbidden(
+            'FORBIDDEN',
+            'Tài khoản chưa có hồ sơ tài xế đang hoạt động',
+          );
+        }
 
-    const trip = await this.prisma.trip.findUnique({ where: { id: tripId } });
-    if (!trip) throw ApiException.notFound('Không tìm thấy chuyến xe');
-    if (trip.driverId !== driver.id) {
-      throw ApiException.forbidden('FORBIDDEN', 'Bạn chỉ được gửi GPS cho chuyến xe được phân công');
-    }
-    if (trip.status !== TripStatus.IN_TRANSIT) {
-      throw ApiException.conflict('TRIP_NOT_IN_TRANSIT', 'Chỉ được gửi GPS khi chuyến xe đang vận chuyển');
-    }
+        const trip = await tx.trip.findUnique({ where: { id: tripId } });
+        if (!trip) throw ApiException.notFound('Không tìm thấy chuyến xe');
+        if (trip.driverId !== driver.id) {
+          throw ApiException.forbidden(
+            'FORBIDDEN',
+            'Bạn chỉ được gửi GPS cho chuyến xe được phân công',
+          );
+        }
+        if (trip.status !== TripStatus.IN_TRANSIT) {
+          throw ApiException.conflict(
+            'TRIP_NOT_IN_TRANSIT',
+            'Chỉ được gửi GPS khi chuyến xe đang vận chuyển',
+          );
+        }
 
-    const recordedAt = new Date(dto.recordedAt);
-    const latestAllowedTime = Date.now() + 2 * 60 * 1000;
-    if (recordedAt.getTime() > latestAllowedTime) {
-      throw ApiException.badRequest('VALIDATION_ERROR', 'recordedAt không được nằm quá 2 phút trong tương lai');
-    }
+        const recordedAt = new Date(dto.recordedAt);
+        const latestAllowedTime = Date.now() + 2 * 60 * 1000;
+        if (recordedAt.getTime() > latestAllowedTime) {
+          throw ApiException.badRequest(
+            'VALIDATION_ERROR',
+            'recordedAt không được nằm quá 2 phút trong tương lai',
+          );
+        }
 
-    const location = await this.prisma.tripLocation.create({
-      data: {
-        tripId: trip.id,
-        vehicleId: trip.vehicleId,
-        driverId: driver.id,
-        latitude: dto.latitude,
-        longitude: dto.longitude,
-        speedKph: dto.speedKph,
-        headingDegrees: dto.headingDegrees,
-        recordedAt,
+        const location = await tx.tripLocation.create({
+          data: {
+            tripId: trip.id,
+            vehicleId: trip.vehicleId,
+            driverId: driver.id,
+            latitude: dto.latitude,
+            longitude: dto.longitude,
+            speedKph: dto.speedKph,
+            headingDegrees: dto.headingDegrees,
+            recordedAt,
+          },
+        });
+
+        return {
+          tripId: location.tripId,
+          vehicleId: location.vehicleId,
+          driverId: location.driverId,
+          latitude: location.latitude,
+          longitude: location.longitude,
+          speedKph: location.speedKph,
+          headingDegrees: location.headingDegrees,
+          recordedAt: location.recordedAt,
+        };
       },
-    });
-
-    return {
-      tripId: location.tripId,
-      vehicleId: location.vehicleId,
-      driverId: location.driverId,
-      latitude: location.latitude,
-      longitude: location.longitude,
-      speedKph: location.speedKph,
-      headingDegrees: location.headingDegrees,
-      recordedAt: location.recordedAt,
-    };
+    );
   }
 
   async getLatestLocation(tripId: string, user: User) {
@@ -83,7 +112,10 @@ export class TrackingService {
         where: { userId: user.id, deletedAt: null, isActive: true },
       });
       if (!driver || trip.driverId !== driver.id) {
-        throw ApiException.forbidden('FORBIDDEN', 'Bạn chỉ được xem vị trí chuyến xe được phân công');
+        throw ApiException.forbidden(
+          'FORBIDDEN',
+          'Bạn chỉ được xem vị trí chuyến xe được phân công',
+        );
       }
     } else if (user.role !== Role.MANAGER && user.role !== Role.ADMIN) {
       throw ApiException.forbidden('FORBIDDEN', 'Bạn không có quyền xem vị trí chuyến xe');
