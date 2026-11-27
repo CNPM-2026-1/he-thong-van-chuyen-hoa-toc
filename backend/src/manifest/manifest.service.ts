@@ -6,7 +6,6 @@ import {
   ManifestItemStatus,
   ManifestStatus,
   OrderStatus,
-  Prisma,
   Role,
   TripStatus,
   User,
@@ -94,7 +93,7 @@ export class ManifestService {
           include: { route: true },
         });
         if (!trip) throw ApiException.notFound('Không tìm thấy chuyến xe');
-        if (![TripStatus.PLANNED, TripStatus.BOARDING].includes(trip.status)) {
+        if (trip.status !== TripStatus.PLANNED && trip.status !== TripStatus.BOARDING) {
           throw ApiException.conflict('MANIFEST_LOCKED', 'Không thể sửa manifest sau khi chuyến đã xuất bến');
         }
 
@@ -103,7 +102,7 @@ export class ManifestService {
           include: { packages: true },
         });
         if (!order) throw ApiException.notFound('Không tìm thấy đơn hàng');
-        if (![OrderStatus.RECEIVED, OrderStatus.WAITING_FOR_DISPATCH].includes(order.status)) {
+        if (order.status !== OrderStatus.RECEIVED && order.status !== OrderStatus.WAITING_FOR_DISPATCH) {
           throw ApiException.conflict(
             'ORDER_NOT_READY_FOR_DISPATCH',
             'Chỉ thêm đơn đã được tiếp nhận và đang chờ điều phối vào manifest',
@@ -235,9 +234,13 @@ export class ManifestService {
 
     const allowed =
       (current.status === ManifestItemStatus.PENDING_LOAD &&
-        [ManifestItemStatus.LOADED, ManifestItemStatus.MISSING, ManifestItemStatus.DAMAGED].includes(dto.status)) ||
+        (dto.status === ManifestItemStatus.LOADED ||
+          dto.status === ManifestItemStatus.MISSING ||
+          dto.status === ManifestItemStatus.DAMAGED)) ||
       (current.status === ManifestItemStatus.LOADED &&
-        [ManifestItemStatus.UNLOADED, ManifestItemStatus.MISSING, ManifestItemStatus.DAMAGED].includes(dto.status));
+        (dto.status === ManifestItemStatus.UNLOADED ||
+          dto.status === ManifestItemStatus.MISSING ||
+          dto.status === ManifestItemStatus.DAMAGED));
 
     if (!allowed) {
       throw ApiException.conflict(
@@ -245,7 +248,7 @@ export class ManifestService {
         `Không thể chuyển kiện từ ${current.status} sang ${dto.status}`,
       );
     }
-    if (dto.status === ManifestItemStatus.LOADED && ![TripStatus.PLANNED, TripStatus.BOARDING].includes(trip.status)) {
+    if (dto.status === ManifestItemStatus.LOADED && trip.status !== TripStatus.PLANNED && trip.status !== TripStatus.BOARDING) {
       throw ApiException.conflict('TRIP_NOT_BOARDING', 'Chỉ xếp kiện khi chuyến chưa xuất bến');
     }
     if (dto.status === ManifestItemStatus.UNLOADED && trip.status !== TripStatus.ARRIVED) {
@@ -276,7 +279,7 @@ export class ManifestService {
       });
 
       let orderStatusChanged = false;
-      if ([ManifestItemStatus.MISSING, ManifestItemStatus.DAMAGED].includes(dto.status)) {
+      if (dto.status === ManifestItemStatus.MISSING || dto.status === ManifestItemStatus.DAMAGED) {
         if (order.status !== OrderStatus.INCIDENT_HOLD) {
           await tx.order.update({
             where: { id: order.id },
