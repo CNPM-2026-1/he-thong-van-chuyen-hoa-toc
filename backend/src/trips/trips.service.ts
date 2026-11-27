@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma, Role, TripStatus, User, VehicleStatus } from '@prisma/client';
+import { ManifestItemStatus, ManifestStatus, OrderStatus, Prisma, Role, TripStatus, User, VehicleStatus } from '@prisma/client';
 import { ApiException } from '../common/api-exception';
 import { IdempotencyService } from '../common/idempotency.service';
+import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { paginated, skipTake } from '../common/utils';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTripDto, ListTripsQueryDto, UpdateTripStatusDto } from './dto/trip.dto';
@@ -29,6 +30,7 @@ export class TripsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly idempotency: IdempotencyService,
+    private readonly realtime: RealtimeGateway,
   ) {}
 
   async list(query: ListTripsQueryDto, user: User) {
@@ -180,7 +182,15 @@ export class TripsService {
       throw ApiException.forbidden('FORBIDDEN', 'Bạn không có quyền cập nhật trạng thái chuyến');
     }
 
-    return this.prisma.$transaction(
+    const orderEvents: Array<{
+      id: string;
+      trackingCode: string;
+      fromStatus: OrderStatus;
+      toStatus: OrderStatus;
+      version: number;
+    }> = [];
+
+    const updated = await this.prisma.$transaction(
       async (tx) => {
         const trip = await tx.trip.findUnique({ where: { id: tripId } });
         if (!trip) throw ApiException.notFound('Không tìm thấy chuyến xe');
@@ -206,10 +216,75 @@ export class TripsService {
         }
 
         const now = new Date();
-        const updated = await tx.trip.update({
+        let manifestId: string | null = null;
+        if (dto.status === TripStatus.DISPATCHED) {
+          const manifest = await tx.manifest.findUnique({
+            where: { tripId: trip.id },
+          });
+          if (!manifest) {
+            throw ApiException.conflict(
+              'MANIFEST_REQUIRED',
+              'Cần tạo manifest và thêm kiện hàng trước khi xuất bến',
+            );
+          }
+          manifestId = manifest.id;
+          const totalItems = await tx.manifestItem.count({ where: { manifestId } });
+          const loadedItems = await tx.manifestItem.count({
+            where: { manifestId, status: ManifestItemStatus.LOADED },
+          });
+          if (totalItems === 0 || loadedItems !== totalItems) {
+            throw ApiException.conflict(
+              'MANIFEST_NOT_READY',
+              'Tất cả kiện trong manifest phải được xác nhận LOADED trước khi xuất bến',
+            );
+          }
+
+          const manifestItems = await tx.manifestItem.findMany({
+            where: { manifestId },
+            include: { package: { include: { order: true } } },
+          });
+          const orders = new Map(manifestItems.map((item) => [item.package.order.id, item.package.order]));
+          for (const order of orders.values()) {
+            if (![OrderStatus.RECEIVED, OrderStatus.WAITING_FOR_DISPATCH].includes(order.status)) {
+              throw ApiException.conflict(
+                'ORDER_NOT_READY_FOR_DISPATCH',
+                `Đơn ${order.trackingCode} không ở trạng thái chờ điều phối`,
+              );
+            }
+          }
+
+          for (const order of orders.values()) {
+            const changed = await tx.order.update({
+              where: { id: order.id },
+              data: {
+                status: OrderStatus.IN_TRANSIT,
+                version: { increment: 1 },
+              },
+            });
+            await tx.orderStatusHistory.create({
+              data: {
+                orderId: order.id,
+                changedById: user.id,
+                fromStatus: order.status,
+                toStatus: OrderStatus.IN_TRANSIT,
+                reason: `Chuyến ${trip.code} đã xuất bến`,
+              },
+            });
+            orderEvents.push({
+              id: order.id,
+              trackingCode: order.trackingCode,
+              fromStatus: order.status,
+              toStatus: OrderStatus.IN_TRANSIT,
+              version: changed.version,
+            });
+          }
+        }
+
+        const updatedTrip = await tx.trip.update({
           where: { id: trip.id },
           data: {
             status: dto.status,
+            version: { increment: 1 },
             ...(dto.status === TripStatus.IN_TRANSIT ? { actualDepartureAt: now } : {}),
             ...(dto.status === TripStatus.ARRIVED ? { actualArrivalAt: now } : {}),
           },
@@ -268,6 +343,12 @@ export class TripsService {
             where: { id: trip.vehicleId },
             data: { status: VehicleStatus.IN_USE },
           });
+          if (manifestId) {
+            await tx.manifest.update({
+              where: { id: manifestId },
+              data: { status: ManifestStatus.CLOSED, version: { increment: 1 } },
+            });
+          }
         }
 
         if (dto.status === TripStatus.COMPLETED || dto.status === TripStatus.CANCELLED) {
@@ -290,12 +371,36 @@ export class TripsService {
               data: { status: VehicleStatus.AVAILABLE },
             });
           }
+          await tx.manifest.updateMany({
+            where: { tripId: trip.id },
+            data: { status: ManifestStatus.CLOSED, version: { increment: 1 } },
+          });
         }
 
-        return updated;
+        return updatedTrip;
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
     );
+
+    this.realtime.emitToTrip(tripId, 'trip:status_changed', {
+      tripId,
+      status: updated.status,
+      actorId: user.id,
+      changedAt: new Date().toISOString(),
+    }, updated.version);
+
+    for (const order of orderEvents) {
+      this.realtime.emitToOrder(order.id, 'order:status_changed', {
+        orderId: order.id,
+        trackingCode: order.trackingCode,
+        fromStatus: order.fromStatus,
+        toStatus: order.toStatus,
+        actorId: user.id,
+        reason: `Chuyến ${updated.code} đã xuất bến`,
+      }, order.version);
+    }
+
+    return updated;
   }
 
   private async findTripOrThrow(id: string) {
