@@ -42,6 +42,16 @@ enum VehicleStatus {
   MAINTENANCE
 }
 
+enum TripStatus {
+  PLANNED
+  BOARDING
+  DISPATCHED
+  IN_TRANSIT
+  ARRIVED
+  COMPLETED
+  CANCELLED
+}
+
 model User {
   id           String     @id @default(uuid()) @db.Uuid
   fullName     String     @map("full_name")
@@ -113,6 +123,7 @@ model Route {
   originStation      Station     @relation("RouteOrigin", fields: [originStationId], references: [id])
   destinationStation Station     @relation("RouteDestination", fields: [destinationStationId], references: [id])
   priceRules         PriceRule[]
+  trips              Trip[]
 
   @@index([originStationId])
   @@index([destinationStationId])
@@ -131,7 +142,9 @@ model Vehicle {
   updatedAt        DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
   deletedAt        DateTime?     @map("deleted_at") @db.Timestamptz(3)
 
-  drivers Driver[]
+  drivers        Driver[]
+  trips          Trip[]
+  tripLocations  TripLocation[]
 
   @@map("vehicles")
 }
@@ -148,6 +161,8 @@ model Driver {
 
   user           User     @relation(fields: [userId], references: [id])
   defaultVehicle Vehicle? @relation(fields: [defaultVehicleId], references: [id])
+  trips          Trip[]
+  tripLocations  TripLocation[]
 
   @@map("drivers")
 }
@@ -170,4 +185,49 @@ model PriceRule {
 
   @@index([routeId, effectiveFrom])
   @@map("price_rules")
+}
+
+model Trip {
+  id                  String     @id @default(uuid()) @db.Uuid
+  code                String     @unique
+  routeId             String     @map("route_id") @db.Uuid
+  vehicleId           String     @map("vehicle_id") @db.Uuid
+  driverId            String     @map("driver_id") @db.Uuid
+  plannedDepartureAt  DateTime   @map("planned_departure_at") @db.Timestamptz(3)
+  plannedArrivalAt    DateTime?  @map("planned_arrival_at") @db.Timestamptz(3)
+  actualDepartureAt   DateTime?  @map("actual_departure_at") @db.Timestamptz(3)
+  actualArrivalAt     DateTime?  @map("actual_arrival_at") @db.Timestamptz(3)
+  status              TripStatus @default(PLANNED)
+  createdAt           DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt           DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  route         Route          @relation(fields: [routeId], references: [id], onDelete: Restrict)
+  vehicle       Vehicle        @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+  driver        Driver         @relation(fields: [driverId], references: [id], onDelete: Restrict)
+  locations     TripLocation[]
+
+  @@index([driverId, status])
+  @@index([vehicleId, status])
+  @@index([plannedDepartureAt])
+  @@map("trips")
+}
+
+model TripLocation {
+  id             String   @id @default(uuid()) @db.Uuid
+  tripId         String   @map("trip_id") @db.Uuid
+  vehicleId      String   @map("vehicle_id") @db.Uuid
+  driverId       String   @map("driver_id") @db.Uuid
+  latitude       Float
+  longitude      Float
+  speedKph       Float?   @map("speed_kph")
+  headingDegrees Float?   @map("heading_degrees")
+  recordedAt     DateTime @map("recorded_at") @db.Timestamptz(3)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  trip    Trip    @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+  driver  Driver  @relation(fields: [driverId], references: [id], onDelete: Restrict)
+
+  @@index([tripId, recordedAt])
+  @@map("trip_locations")
 }
