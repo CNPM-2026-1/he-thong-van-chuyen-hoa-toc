@@ -162,9 +162,8 @@ model Driver {
 
   user           User     @relation(fields: [userId], references: [id])
   defaultVehicle Vehicle? @relation(fields: [defaultVehicleId], references: [id])
-  trips              Trip[]
-  tripLocations       TripLocation[]
-  tripStatusChanges  TripStatusHistory[]
+  trips         Trip[]
+  tripLocations TripLocation[]
 
   @@map("drivers")
 }
