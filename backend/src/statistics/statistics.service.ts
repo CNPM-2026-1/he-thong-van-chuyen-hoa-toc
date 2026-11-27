@@ -28,7 +28,15 @@ export class StatisticsService {
         },
       }),
       this.prisma.order.count({ where: { deliveredAt: range } }),
-      this.prisma.order.count({ where: { returnedAt: range } }),
+      this.prisma.order.count({
+        where: {
+          createdAt: range,
+          OR: [
+            { returnedAt: range },
+            { status: { in: [OrderStatus.RETURNING, OrderStatus.RETURNED] } },
+          ],
+        },
+      }),
       this.prisma.codTransaction.aggregate({
         where: { collectedAt: range },
         _sum: { amountVnd: true },
