@@ -45,6 +45,8 @@ tags:
   description: Thống kê
 - name: Media
   description: Upload ảnh/chứng từ
+- name: Notifications
+  description: Thông báo cá nhân
 paths:
   /auth/register:
     post:
@@ -4694,13 +4696,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ManifestItem'
-              example: &id021
-                id: bbbbbbbb-1111-4111-8111-111111111111
+                $ref: '#/components/schemas/ManifestAddOrderResponse'
+              example:
                 tripId: aaaaaaaa-1111-4111-8111-111111111111
-                orderId: 99999999-9999-4999-8999-999999999999
-                trackingCode: HT202611110001
-                status: PENDING_LOAD
+                manifestId: cccccccc-1111-4111-8111-111111111111
+                addedCount: 1
+                items:
+                - id: bbbbbbbb-1111-4111-8111-111111111111
+                  tripId: aaaaaaaa-1111-4111-8111-111111111111
+                  orderId: 99999999-9999-4999-8999-999999999999
+                  trackingCode: HT202611110001
+                  packageId: aaaaaaaa-bbbb-4aaa-8aaa-aaaaaaaaaaaa
+                  packageCode: PK-HT202611110001-01
+                  status: PENDING_LOAD
         '400':
           description: Dữ liệu không hợp lệ
           content:
@@ -6606,6 +6614,80 @@ paths:
               fileName: delivery-proof.jpg
               contentType: image/jpeg
               purpose: DELIVERY_PROOF
+  /notifications:
+    get:
+      operationId: listNotifications
+      tags: [Notifications]
+      summary: Danh sách thông báo của tài khoản hiện tại
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema: { type: integer, minimum: 1, default: 1 }
+      - name: pageSize
+        in: query
+        required: false
+        schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+      - name: unreadOnly
+        in: query
+        required: false
+        schema: { type: boolean, default: false }
+      responses:
+        '200':
+          description: Danh sách thông báo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Notification'
+                  page: { type: integer }
+                  total: { type: integer }
+                required: [items, page, total]
+        '401':
+          description: Chưa xác thực
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+        '500':
+          $ref: '#/components/responses/InternalError'
+      security:
+      - bearerAuth: []
+  /notifications/{notificationId}/read:
+    patch:
+      operationId: markNotificationRead
+      tags: [Notifications]
+      summary: Đánh dấu thông báo đã đọc
+      parameters:
+      - name: notificationId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Thông báo đã được đánh dấu đã đọc
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+        '401':
+          description: Chưa xác thực
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+        '404':
+          description: Không tìm thấy thông báo thuộc tài khoản hiện tại
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+        '500':
+          $ref: '#/components/responses/InternalError'
+      security:
+      - bearerAuth: []
+
 components:
   parameters:
     IdempotencyKey:
@@ -7606,25 +7688,25 @@ components:
           format: uuid
         trackingCode:
           type: string
+        packageId:
+          type: string
+          format: uuid
+        packageCode:
+          type: string
         status:
           type: string
-          enum:
-          - PENDING_LOAD
-          - LOADED
-          - UNLOADED
-          - MISSING
-          - DAMAGED
+          enum: [PENDING_LOAD, LOADED, UNLOADED, MISSING, DAMAGED]
         scannedAt:
           type: string
           format: date-time
+        loadedAt:
+          type: string
+          format: date-time
+        unloadedAt:
+          type: string
+          format: date-time
       additionalProperties: false
-      required:
-      - id
-      - tripId
-      - orderId
-      - trackingCode
-      - status
-      example: *id021
+      required: [id, tripId, orderId, trackingCode, packageId, packageCode, status]
     ManifestItemCreate:
       type: object
       properties:
@@ -7635,6 +7717,25 @@ components:
       required:
       - orderId
       example: *id039
+
+    ManifestAddOrderResponse:
+      type: object
+      properties:
+        tripId:
+          type: string
+          format: uuid
+        manifestId:
+          type: string
+          format: uuid
+        addedCount:
+          type: integer
+          minimum: 1
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ManifestItem'
+      required: [tripId, manifestId, addedCount, items]
+      additionalProperties: false
     ManifestItemUpdate:
       type: object
       properties:
@@ -7657,6 +7758,14 @@ components:
         tripId:
           type: string
           format: uuid
+        manifestId:
+          type: string
+          format: uuid
+        code:
+          type: string
+        status:
+          type: string
+          enum: [OPEN, CLOSED]
         items:
           type: array
           items:
@@ -7667,13 +7776,11 @@ components:
         loadedItems:
           type: integer
           minimum: 0
+        unloadedItems:
+          type: integer
+          minimum: 0
       additionalProperties: false
-      required:
-      - tripId
-      - items
-      - totalItems
-      - loadedItems
-      example: *id041
+      required: [tripId, items, totalItems, loadedItems, unloadedItems]
     TripLocationInput:
       type: object
       properties:
@@ -8211,3 +8318,36 @@ components:
       - objectKey
       - expiresInSeconds
       example: *id058
+
+    Notification:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        orderId:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [ORDER_STATUS, DELIVERY, COD, INCIDENT, TRIP, SYSTEM]
+        title:
+          type: string
+        body:
+          type: string
+        resourceType:
+          type: string
+        resourceId:
+          type: string
+          format: uuid
+        readAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, userId, type, title, body, createdAt]
+      additionalProperties: false
