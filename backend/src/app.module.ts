@@ -9,6 +9,8 @@ import { RoutesModule } from './routes/routes.module';
 import { VehiclesModule } from './vehicles/vehicles.module';
 import { DriversModule } from './drivers/drivers.module';
 import { PriceRulesModule } from './price-rules/price-rules.module';
+import { TripsModule } from './trips/trips.module';
+import { TrackingModule } from './tracking/tracking.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 
@@ -23,6 +25,8 @@ import { RolesGuard } from './common/guards/roles.guard';
     VehiclesModule,
     DriversModule,
     PriceRulesModule,
+    TripsModule,
+    TrackingModule,
   ],
   providers: [
     // Mặc định mọi route đều cần đăng nhập; dùng @Public() để mở.
