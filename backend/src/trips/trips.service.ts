@@ -243,7 +243,7 @@ export class TripsService {
             where: { manifestId },
             include: { package: { include: { order: true } } },
           });
-          const orders = new Map(manifestItems.map((item) => [item.package.order.id, item.package.order]));
+          const orders = new Map(manifestItems.map((item) => [item.package.order.id, item.package.order] as const));
           for (const order of orders.values()) {
             if (
               order.status !== OrderStatus.RECEIVED &&
@@ -270,7 +270,7 @@ export class TripsService {
           if (manifest.items.some((item) => item.status !== ManifestItemStatus.LOADED)) {
             throw ApiException.conflict('MANIFEST_NOT_READY', 'Tất cả kiện phải được xếp lên xe trước khi vận chuyển');
           }
-          const orders = new Map(manifest.items.map((item) => [item.package.order.id, item.package.order]));
+          const orders = new Map(manifest.items.map((item) => [item.package.order.id, item.package.order] as const));
           for (const order of orders.values()) {
             if (
               order.status !== OrderStatus.WAITING_FOR_DISPATCH &&
