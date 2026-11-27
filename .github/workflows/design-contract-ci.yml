@@ -1,0 +1,89 @@
+name: Design Contract CI
+
+on:
+  push:
+    branches:
+      - feature/sprint2-bo2-backend
+    paths:
+      - "docs/**"
+      - ".github/workflows/design-contract-ci.yml"
+  pull_request:
+    paths:
+      - "docs/**"
+      - ".github/workflows/design-contract-ci.yml"
+
+jobs:
+  validate-design-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: docs/mock-server/package.json
+
+      - name: Install Prism
+        working-directory: docs/mock-server
+        run: npm install --no-audit --no-fund
+
+      - name: Validate OpenAPI with Prism
+        working-directory: docs/mock-server
+        run: npm run validate
+
+      - name: Validate PlantUML, Postman and environment artifacts
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const path = require('node:path');
+
+          const walk = (dir) => fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+            const full = path.join(dir, entry.name);
+            return entry.isDirectory() ? walk(full) : [full];
+          });
+
+          const diagrams = walk('docs/diagrams').filter((file) => file.endsWith('.puml'));
+          if (diagrams.length !== 15) {
+            throw new Error(`Expected 15 PlantUML source files, found ${diagrams.length}`);
+          }
+
+          const collection = JSON.parse(
+            fs.readFileSync('docs/postman/express-delivery-api.postman_collection.json', 'utf8'),
+          );
+          const countRequests = (items) => items.reduce(
+            (total, item) => total + (item.request ? 1 : 0) + (item.item ? countRequests(item.item) : 0),
+            0,
+          );
+          const requestCount = countRequests(collection.item || []);
+          if (requestCount !== 69) {
+            throw new Error(`Expected 69 Postman requests, found ${requestCount}`);
+          }
+
+          const notificationGroup = (collection.item || []).find((item) => item.name === 'Notifications');
+          if (!notificationGroup || countRequests(notificationGroup.item || []) !== 2) {
+            throw new Error('Postman Notifications group must contain list and mark-read requests');
+          }
+
+          for (const file of [
+            'docs/postman/local-prism.postman_environment.json',
+            'docs/postman/server-staging.postman_environment.json',
+          ]) {
+            const environment = JSON.parse(fs.readFileSync(file, 'utf8'));
+            const keys = new Set((environment.values || []).map((value) => value.key));
+            for (const key of ['baseUrl', 'accessToken', 'refreshToken', 'notificationId']) {
+              if (!keys.has(key)) throw new Error(`${file} is missing ${key}`);
+            }
+          }
+
+          const openapi = fs.readFileSync('docs/openapi.yaml', 'utf8');
+          const pathCount = (openapi.match(/^  \/[^\n]+:\s*$/gm) || []).length;
+          const operationCount = (openapi.match(/^    (get|post|put|patch|delete|options|head):\s*$/gm) || []).length;
+          if (pathCount !== 47 || operationCount !== 69) {
+            throw new Error(`Expected 47 OpenAPI paths / 69 operations, found ${pathCount} / ${operationCount}`);
+          }
+
+          console.log(`Validated: ${diagrams.length} PlantUML sources, ${pathCount} OpenAPI paths, ${operationCount} operations, ${requestCount} Postman requests.`);
+          NODE
