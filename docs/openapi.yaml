@@ -6733,15 +6733,7 @@ components:
       properties:
         code:
           type: string
-          enum:
-          - VALIDATION_ERROR
-          - UNAUTHENTICATED
-          - FORBIDDEN
-          - NOT_FOUND
-          - CONFLICT
-          - UNPROCESSABLE_ENTITY
-          - RATE_LIMITED
-          - INTERNAL_ERROR
+          description: Mã lỗi chuẩn hoặc mã lỗi nghiệp vụ cụ thể (ví dụ INVALID_OTP, IDEMPOTENCY_KEY_REUSED, OBJECT_STORAGE_NOT_CONFIGURED).
         message:
           type: string
       additionalProperties: false
