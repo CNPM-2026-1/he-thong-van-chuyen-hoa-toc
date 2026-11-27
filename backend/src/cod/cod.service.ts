@@ -123,26 +123,31 @@ export class CodService {
           });
         }
 
-        return reconciliation;
+        const updatedTrip = await tx.trip.update({
+          where: { id: trip.id },
+          data: { version: { increment: 1 } },
+        });
+        return { reconciliation, tripVersion: updatedTrip.version };
       },
     );
 
+    const reconciliation = result.reconciliation;
     this.realtime.emitToTrip(dto.tripId, 'cod:reconciled', {
-      reconciliationId: result.id,
-      tripId: result.tripId,
-      expectedAmountVnd: result.expectedAmountVnd,
-      countedAmountVnd: result.countedAmountVnd,
-      differenceVnd: result.differenceVnd,
-      status: result.status,
-    });
+      reconciliationId: reconciliation.id,
+      tripId: reconciliation.tripId,
+      expectedAmountVnd: reconciliation.expectedAmountVnd,
+      countedAmountVnd: reconciliation.countedAmountVnd,
+      differenceVnd: reconciliation.differenceVnd,
+      status: reconciliation.status,
+    }, result.tripVersion);
     return {
-      id: result.id,
-      tripId: result.tripId,
-      expectedAmountVnd: result.expectedAmountVnd,
-      countedAmountVnd: result.countedAmountVnd,
-      differenceVnd: result.differenceVnd,
-      status: result.status,
-      createdAt: result.createdAt,
+      id: reconciliation.id,
+      tripId: reconciliation.tripId,
+      expectedAmountVnd: reconciliation.expectedAmountVnd,
+      countedAmountVnd: reconciliation.countedAmountVnd,
+      differenceVnd: reconciliation.differenceVnd,
+      status: reconciliation.status,
+      createdAt: reconciliation.createdAt,
     };
   }
 
