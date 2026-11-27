@@ -7601,12 +7601,15 @@ components:
         plannedArrivalAt:
           type: string
           format: date-time
+          nullable: true
         actualDepartureAt:
           type: string
           format: date-time
+          nullable: true
         actualArrivalAt:
           type: string
           format: date-time
+          nullable: true
         status:
           type: string
           enum:
@@ -7617,6 +7620,15 @@ components:
           - ARRIVED
           - COMPLETED
           - CANCELLED
+        version:
+          type: integer
+          minimum: 1
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
       additionalProperties: false
       required:
       - id
@@ -7945,13 +7957,23 @@ components:
         deliveredAt:
           type: string
           format: date-time
+          nullable: true
         codCollectedVnd:
           type: integer
           minimum: 0
+          nullable: true
         photoObjectKeys:
           type: array
           items:
             type: string
+        failureReason:
+          type: string
+          enum: [RECIPIENT_ABSENT, INVALID_ADDRESS, REFUSED, OTHER]
+        note:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
       additionalProperties: false
       required:
       - id
