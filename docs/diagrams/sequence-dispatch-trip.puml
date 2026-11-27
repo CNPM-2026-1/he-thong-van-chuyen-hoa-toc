@@ -1,0 +1,29 @@
+@startuml
+actor MANAGER
+actor STAFF
+participant "Web Admin / Mobile" as Client
+participant "NestJS API" as API
+database "PostgreSQL" as DB
+participant "Socket.IO" as Socket
+
+MANAGER -> Client : Tạo chuyến, gán xe/tài xế
+Client -> API : POST /api/v1/trips
+API -> DB : Tạo Trip PLANNED
+DB --> API : Trip
+API --> Client : 201 Trip
+MANAGER -> Client : Thêm đơn vào manifest
+Client -> API : POST /api/v1/trips/{tripId}/manifest/items
+API -> DB : Kiểm tra đơn RECEIVED; thêm manifest item và chuyển WAITING_FOR_DISPATCH
+DB --> API : ManifestItem + updated Order
+API --> Client : 201 ManifestItem
+STAFF -> Client : Quét xác nhận xếp kiện
+Client -> API : PATCH /api/v1/manifest/items/{itemId}
+API -> DB : Cập nhật item LOADED
+DB --> API : Item LOADED
+MANAGER -> Client : Điều phối xuất bến
+Client -> API : PATCH /api/v1/trips/{tripId}/status
+API -> DB : Transaction: Trip IN_TRANSIT + Order IN_TRANSIT + history
+DB --> API : Updated trip/orders
+API -> Socket : Emit order:status_changed + trip events
+API --> Client : 200 Trip IN_TRANSIT
+@enduml
