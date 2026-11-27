@@ -8,10 +8,10 @@ Phạm vi: Đầu mục 4 - TV7 và TV8, dự án **Hệ thống quản lý quy 
 |---|---|---|
 | [architecture.md](architecture.md) | Kiến trúc logic, thành phần, luồng kết nối và các quyết định thiết kế | TV7 |
 | [diagrams/](diagrams/) | Đủ 15 file PlantUML: kiến trúc, 2 deployment, use case tổng quát + 5 tác nhân, state đơn hàng, 5 sequence | TV7 |
-| [openapi.yaml](openapi.yaml) | OpenAPI 3.1; hiện có 47 paths / 69 operations (gồm 2 route Notifications bổ sung) | TV8 |
+| [openapi.yaml](openapi.yaml) | OpenAPI 3.1; hiện có 49 paths / 71 operations (gồm 2 route Notifications bổ sung) | TV8 |
 | [realtime-events.md](realtime-events.md) | Quy ước Socket.IO, rooms, event name, payload, lỗi và reconnect | TV8 |
 | [mock-server/README.md](mock-server/README.md) | Cài đặt/chạy Prism mock server | TV8 |
-| [postman/](postman/) | Collection 69 requests và 2 environments local/server | TV8 |
+| [postman/](postman/) | Collection 71 requests và 2 environments local/server | TV8 |
 | [api-contract.md](api-contract.md) | Quy ước dùng chung và ví dụ response cơ bản cho app/web/backend | TV7 + TV8 đề xuất chia sẻ |
 
 ## Cách xem sơ đồ
