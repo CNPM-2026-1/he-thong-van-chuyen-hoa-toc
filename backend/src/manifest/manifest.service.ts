@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import {
+  Incident,
   IncidentSeverity,
   IncidentStatus,
   IncidentType,
@@ -13,6 +14,7 @@ import {
 import { ApiException } from '../common/api-exception';
 import { IdempotencyService } from '../common/idempotency.service';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
+import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AddManifestOrderDto, UpdateManifestItemDto } from './dto/manifest.dto';
 
@@ -30,6 +32,7 @@ export class ManifestService {
     private readonly prisma: PrismaService,
     private readonly idempotency: IdempotencyService,
     private readonly realtime: RealtimeGateway,
+    private readonly notifications: NotificationsService,
   ) {}
 
   async getManifest(tripId: string, user: User) {
@@ -279,6 +282,7 @@ export class ManifestService {
       });
 
       let orderStatusChanged = false;
+      let createdIncident: Incident | null = null;
       if (dto.status === ManifestItemStatus.MISSING || dto.status === ManifestItemStatus.DAMAGED) {
         if (order.status !== OrderStatus.INCIDENT_HOLD) {
           await tx.order.update({
@@ -296,7 +300,7 @@ export class ManifestService {
           });
           orderStatusChanged = true;
         }
-        await tx.incident.create({
+        createdIncident = await tx.incident.create({
           data: {
             type: dto.status === ManifestItemStatus.DAMAGED ? IncidentType.DAMAGED_PACKAGE : IncidentType.LOST_PACKAGE,
             severity: IncidentSeverity.MEDIUM,
@@ -336,7 +340,7 @@ export class ManifestService {
         }
       }
 
-      return { item, orderStatusChanged };
+      return { item, orderStatusChanged, incident: createdIncident };
     });
 
     const eventData = {
@@ -352,6 +356,28 @@ export class ManifestService {
     };
     this.realtime.emitToTrip(trip.id, 'manifest:item_scanned', eventData, trip.version + 1);
     this.realtime.emitToOrder(order.id, 'manifest:item_scanned', eventData, order.version + (updated.orderStatusChanged ? 1 : 0));
+
+    if (updated.incident) {
+      const incidentEvent = {
+        incidentId: updated.incident.id,
+        orderId: updated.incident.orderId,
+        tripId: updated.incident.tripId,
+        type: updated.incident.type,
+        severity: updated.incident.severity,
+        reportedBy: updated.incident.reportedById,
+        createdAt: updated.incident.createdAt,
+      };
+      this.realtime.emitToTrip(trip.id, 'incident:created', incidentEvent);
+      this.realtime.emitToOrder(order.id, 'incident:created', incidentEvent);
+      await this.notifications.notifyManagers({
+        type: 'INCIDENT',
+        title: 'Có kiện hàng thiếu/hỏng trong chuyến',
+        body: updated.incident.description,
+        resourceType: 'incident',
+        resourceId: updated.incident.id,
+        orderId: order.id,
+      });
+    }
 
     return {
       id: updated.item.id,
