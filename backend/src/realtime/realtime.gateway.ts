@@ -124,7 +124,15 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
   }
 
   emitToTrip(tripId: string, event: string, data: Record<string, unknown>, resourceVersion = 1) {
-    this.emitToRoom(`trip:${tripId}`, event, data, resourceVersion);
+    const room = `trip:${tripId}`;
+    this.emitToRoom(room, event, data, resourceVersion);
+
+    // A CUSTOMER is only allowed to view a trip while at least one of their
+    // orders on it remains IN_TRANSIT. Re-check after state/manifest events,
+    // but not on every high-frequency GPS update.
+    if (event !== 'trip:location_updated') {
+      void this.pruneUnauthorizedTripMembers(tripId);
+    }
   }
 
   emitToOrder(orderId: string, event: string, data: Record<string, unknown>, resourceVersion = 1) {
@@ -148,6 +156,24 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
       resourceVersion,
       data,
     });
+  }
+
+  private async pruneUnauthorizedTripMembers(tripId: string) {
+    if (!this.server) return;
+    const room = `trip:${tripId}`;
+    try {
+      const sockets = await this.server.in(room).fetchSockets();
+      await Promise.all(
+        sockets.map(async (socket) => {
+          const user = socket.data.user as User | undefined;
+          if (!user || !(await this.canJoinRoom(user, { resourceType: 'trip', resourceId: tripId }))) {
+            await socket.leave(room);
+          }
+        }),
+      );
+    } catch (error) {
+      this.logger.warn(`Could not refresh trip room membership for ${tripId}: ${String(error)}`);
+    }
   }
 
   private async canJoinRoom(user: User, payload: RoomJoinPayload): Promise<boolean> {
