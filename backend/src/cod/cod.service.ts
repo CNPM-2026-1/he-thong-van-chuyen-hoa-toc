@@ -135,7 +135,15 @@ export class CodService {
       differenceVnd: result.differenceVnd,
       status: result.status,
     });
-    return result;
+    return {
+      id: result.id,
+      tripId: result.tripId,
+      expectedAmountVnd: result.expectedAmountVnd,
+      countedAmountVnd: result.countedAmountVnd,
+      differenceVnd: result.differenceVnd,
+      status: result.status,
+      createdAt: result.createdAt,
+    };
   }
 
   private assertManagerOrAdmin(user: User) {
