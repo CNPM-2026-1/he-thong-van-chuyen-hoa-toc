@@ -17,7 +17,7 @@ async function bootstrap() {
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Hệ thống vận chuyển hỏa tốc - API')
-    .setDescription('Sprint 1: xác thực, tài khoản và danh mục. Bấm "Authorize" và dán accessToken để gọi API cần đăng nhập.')
+    .setDescription('Sprint 1: xác thực, tài khoản, danh mục; Sprint 2: chuyến xe và GPS. Bấm "Authorize" và dán accessToken để gọi API cần đăng nhập.')
     .setVersion('0.1.0')
     .addBearerAuth()
     .build();
