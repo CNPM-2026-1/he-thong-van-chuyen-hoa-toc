@@ -58,8 +58,8 @@ jobs:
             0,
           );
           const requestCount = countRequests(collection.item || []);
-          if (requestCount !== 69) {
-            throw new Error(`Expected 69 Postman requests, found ${requestCount}`);
+          if (requestCount !== 71) {
+            throw new Error(`Expected 71 Postman requests, found ${requestCount}`);
           }
 
           const notificationGroup = (collection.item || []).find((item) => item.name === 'Notifications');
@@ -81,8 +81,8 @@ jobs:
           const openapi = fs.readFileSync('docs/openapi.yaml', 'utf8');
           const pathCount = (openapi.match(/^  \/[^\n]+:\s*$/gm) || []).length;
           const operationCount = (openapi.match(/^    (get|post|put|patch|delete|options|head):\s*$/gm) || []).length;
-          if (pathCount !== 47 || operationCount !== 69) {
-            throw new Error(`Expected 47 OpenAPI paths / 69 operations, found ${pathCount} / ${operationCount}`);
+          if (pathCount !== 49 || operationCount !== 71) {
+            throw new Error(`Expected 49 OpenAPI paths / 71 operations, found ${pathCount} / ${operationCount}`);
           }
 
           console.log(`Validated: ${diagrams.length} PlantUML sources, ${pathCount} OpenAPI paths, ${operationCount} operations, ${requestCount} Postman requests.`);
