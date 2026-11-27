@@ -37,8 +37,9 @@ export class IdempotencyService {
       );
     }
 
+    const serializedPayload = JSON.stringify(canonicalize(payload)) ?? 'null';
     const requestHash = createHash('sha256')
-      .update(JSON.stringify(canonicalize(payload)))
+      .update(serializedPayload)
       .digest('hex');
 
     const where = {
@@ -65,7 +66,11 @@ export class IdempotencyService {
           }
 
           const result = await work(tx);
-          const response = JSON.parse(JSON.stringify(result)) as Prisma.InputJsonValue;
+          const serializedResponse = JSON.stringify(result);
+          if (serializedResponse === undefined) {
+            throw new Error('Idempotent operation must return a JSON-serializable response');
+          }
+          const response = JSON.parse(serializedResponse) as Prisma.InputJsonValue;
 
           await tx.idempotencyRecord.create({
             data: {
