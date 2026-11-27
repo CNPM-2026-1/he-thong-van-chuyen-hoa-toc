@@ -285,7 +285,17 @@ export class ManifestService {
       let orderStatusChanged = false;
       let createdIncident: Incident | null = null;
       if (dto.status === ManifestItemStatus.MISSING || dto.status === ManifestItemStatus.DAMAGED) {
-        if (order.status !== OrderStatus.INCIDENT_HOLD) {
+        let previousOrderStatus = order.status;
+        if (order.status === OrderStatus.INCIDENT_HOLD) {
+          const existingIncident = await tx.incident.findFirst({
+            where: {
+              orderId: order.id,
+              status: { in: [IncidentStatus.OPEN, IncidentStatus.IN_PROGRESS] },
+            },
+            orderBy: { createdAt: 'asc' },
+          });
+          previousOrderStatus = existingIncident?.orderPreviousStatus ?? OrderStatus.IN_TRANSIT;
+        } else {
           await tx.order.update({
             where: { id: order.id },
             data: { status: OrderStatus.INCIDENT_HOLD, version: { increment: 1 } },
@@ -310,7 +320,7 @@ export class ManifestService {
             tripId: trip.id,
             reportedById: user.id,
             description: dto.note ?? `Kiện ${current.package.packageCode} ${dto.status}`,
-            orderPreviousStatus: order.status,
+            orderPreviousStatus: previousOrderStatus,
           },
         });
       }
