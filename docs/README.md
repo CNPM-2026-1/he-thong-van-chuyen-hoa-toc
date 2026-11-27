@@ -37,3 +37,10 @@ Các file `.puml` là mã nguồn PlantUML. Có thể mở bằng PlantUML exten
 - Các vai trò `CUSTOMER`, `STAFF`, `DRIVER`, `MANAGER`, `ADMIN`, tiền tố `/api/v1`, JSON, phân trang `{ items, page, total }`, lỗi `{ code, message }` và login `{ accessToken, refreshToken, user }` được lấy từ kế hoạch Sprint 1.
 - API nghiệp vụ, enum, payload và quy tắc chuyển trạng thái trong tài liệu là **đề xuất thiết kế** để hoàn thành đầu mục TV7/TV8; nhóm cần review với TV1/TV5 trước khi xem là hợp đồng cuối cùng.
 - `localhost:3000` là cổng backend NestJS giả định theo kiến trúc đề xuất; `localhost:4010` là Prism mock. Thay URL server mẫu bằng hạ tầng thật của nhóm.
+
+
+## Sprint 2 – Bộ 2
+
+Bản tổng hợp triển khai backend của TV7 (Linh) và TV8 (Kiên): [sprint2-bo2-implementation.md](sprint2-bo2-implementation.md).
+
+OpenAPI và realtime events đã được cập nhật cùng nhánh `feature/sprint2-bo2-backend`. Mô hình Manifest hiện dùng một `ManifestItem` cho mỗi `Package`; cần TV5/nhóm xác nhận và cập nhật ERD/data dictionary trước khi merge.
