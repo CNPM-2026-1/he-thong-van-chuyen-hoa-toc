@@ -14,7 +14,7 @@ import {
 
 export class DeliveryConfirmDto {
   @ApiProperty({ example: '123456', pattern: '^\\d{6}$' })
-  @Matches(/^\\d{6}$/, { message: 'OTP phải gồm đúng 6 chữ số' })
+  @Matches(/^\d{6}$/, { message: 'OTP phải gồm đúng 6 chữ số' })
   otp: string;
 
   @ApiPropertyOptional({ type: [String], example: ['delivery-proof/2026/11/proof.jpg'] })
