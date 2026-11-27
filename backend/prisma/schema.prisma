@@ -64,8 +64,9 @@ model User {
   updatedAt    DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
   deletedAt    DateTime?  @map("deleted_at") @db.Timestamptz(3)
 
-  refreshTokens RefreshToken[]
-  driver        Driver?
+  refreshTokens      RefreshToken[]
+  driver             Driver?
+  tripStatusChanges  TripStatusHistory[]
 
   @@index([role])
   @@map("users")
@@ -161,8 +162,9 @@ model Driver {
 
   user           User     @relation(fields: [userId], references: [id])
   defaultVehicle Vehicle? @relation(fields: [defaultVehicleId], references: [id])
-  trips          Trip[]
-  tripLocations  TripLocation[]
+  trips              Trip[]
+  tripLocations       TripLocation[]
+  tripStatusChanges  TripStatusHistory[]
 
   @@map("drivers")
 }
@@ -205,6 +207,7 @@ model Trip {
   vehicle       Vehicle        @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
   driver        Driver         @relation(fields: [driverId], references: [id], onDelete: Restrict)
   locations     TripLocation[]
+  statusHistory TripStatusHistory[]
 
   @@index([driverId, status])
   @@index([vehicleId, status])
@@ -230,4 +233,21 @@ model TripLocation {
 
   @@index([tripId, recordedAt])
   @@map("trip_locations")
+}
+
+
+model TripStatusHistory {
+  id          String      @id @default(uuid()) @db.Uuid
+  tripId      String      @map("trip_id") @db.Uuid
+  changedById String      @map("changed_by_id") @db.Uuid
+  fromStatus  TripStatus? @map("from_status")
+  toStatus    TripStatus  @map("to_status")
+  note        String?
+  changedAt   DateTime    @default(now()) @map("changed_at") @db.Timestamptz(3)
+
+  trip      Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  changedBy User @relation(fields: [changedById], references: [id], onDelete: Restrict)
+
+  @@index([tripId, changedAt])
+  @@map("trip_status_history")
 }
