@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import {
   CodTransactionStatus,
   DeliveryAttemptStatus,
+  ManifestItemStatus,
   MediaPurpose,
   NotificationType,
   OrderStatus,
@@ -69,7 +70,7 @@ export class DeliveryService {
         const orderItems = manifest?.items.filter((item) => item.package.orderId === order.id) ?? [];
         if (
           orderItems.length !== order.packageCount ||
-          orderItems.some((item) => item.status !== 'UNLOADED')
+          orderItems.some((item) => item.status !== ManifestItemStatus.UNLOADED)
         ) {
           throw ApiException.conflict(
             'PACKAGES_NOT_UNLOADED',
@@ -467,7 +468,6 @@ export class DeliveryService {
       async (tx) => {
         const order = await tx.order.findUnique({
           where: { id: orderId },
-          include: { packages: true },
         });
         if (!order) throw ApiException.notFound('Không tìm thấy đơn hàng');
         if (order.status !== OrderStatus.DELIVERY_FAILED) {
