@@ -267,8 +267,8 @@ export class ManifestService {
 
     const updated = await this.prisma.$transaction(async (tx) => {
       const now = new Date();
-      const item = await tx.manifestItem.update({
-        where: { id: current.id },
+      const itemUpdate = await tx.manifestItem.updateMany({
+        where: { id: current.id, status: current.status },
         data: {
           status: dto.status,
           scannedById: user.id,
@@ -278,6 +278,13 @@ export class ManifestService {
           ...(dto.status === ManifestItemStatus.UNLOADED ? { unloadedAt: now } : {}),
         },
       });
+      if (itemUpdate.count !== 1) {
+        throw ApiException.conflict(
+          'MANIFEST_ITEM_CHANGED',
+          'Kiện hàng vừa được cập nhật bởi thao tác khác; hãy tải lại manifest',
+        );
+      }
+      const item = await tx.manifestItem.findUniqueOrThrow({ where: { id: current.id } });
 
       await tx.manifest.update({
         where: { id: current.manifestId },
@@ -287,12 +294,15 @@ export class ManifestService {
         where: { id: trip.id },
         data: { version: { increment: 1 } },
       });
+      // Refresh inside the transaction: a concurrent scan may have put this order on INCIDENT_HOLD.
+      const currentOrder = await tx.order.findUniqueOrThrow({ where: { id: order.id } });
+      let orderVersion = currentOrder.version;
 
       let orderStatusChanged = false;
       let createdIncident: Incident | null = null;
       if (dto.status === ManifestItemStatus.MISSING || dto.status === ManifestItemStatus.DAMAGED) {
-        let previousOrderStatus = order.status;
-        if (order.status === OrderStatus.INCIDENT_HOLD) {
+        let previousOrderStatus = currentOrder.status;
+        if (currentOrder.status === OrderStatus.INCIDENT_HOLD) {
           const existingIncident = await tx.incident.findFirst({
             where: {
               orderId: order.id,
@@ -302,15 +312,16 @@ export class ManifestService {
           });
           previousOrderStatus = existingIncident?.orderPreviousStatus ?? OrderStatus.IN_TRANSIT;
         } else {
-          await tx.order.update({
+          const changedOrder = await tx.order.update({
             where: { id: order.id },
             data: { status: OrderStatus.INCIDENT_HOLD, version: { increment: 1 } },
           });
+          orderVersion = changedOrder.version;
           await tx.orderStatusHistory.create({
             data: {
               orderId: order.id,
               changedById: user.id,
-              fromStatus: order.status,
+              fromStatus: currentOrder.status,
               toStatus: OrderStatus.INCIDENT_HOLD,
               reason: dto.note ?? `Kiện ${current.package.packageCode} ${dto.status}`,
             },
@@ -339,11 +350,12 @@ export class ManifestService {
             status: { not: ManifestItemStatus.UNLOADED },
           },
         });
-        if (remaining === 0 && order.status === OrderStatus.IN_TRANSIT) {
-          await tx.order.update({
+        if (remaining === 0 && currentOrder.status === OrderStatus.IN_TRANSIT) {
+          const changedOrder = await tx.order.update({
             where: { id: order.id },
             data: { status: OrderStatus.AT_DESTINATION, version: { increment: 1 } },
           });
+          orderVersion = changedOrder.version;
           await tx.orderStatusHistory.create({
             data: {
               orderId: order.id,
@@ -357,7 +369,7 @@ export class ManifestService {
         }
       }
 
-      return { item, orderStatusChanged, incident: createdIncident, tripVersion: updatedTrip.version };
+      return { item, orderStatusChanged, incident: createdIncident, tripVersion: updatedTrip.version, orderVersion };
     });
 
     const eventData = {
@@ -372,7 +384,7 @@ export class ManifestService {
       scannedAt: updated.item.scannedAt,
     };
     this.realtime.emitToTrip(trip.id, 'manifest:item_scanned', eventData, updated.tripVersion);
-    this.realtime.emitToOrder(order.id, 'manifest:item_scanned', eventData, order.version + (updated.orderStatusChanged ? 1 : 0));
+    this.realtime.emitToOrder(order.id, 'manifest:item_scanned', eventData, updated.orderVersion);
 
     if (updated.incident) {
       const incidentEvent = {
