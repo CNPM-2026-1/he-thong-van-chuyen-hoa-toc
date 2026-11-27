@@ -7,5 +7,5 @@ Import ba file JSON trong Postman theo thứ tự: collection `express-delivery-
 - Request Login và Refresh tự lưu `accessToken`/`refreshToken` từ response vào environment.
 - Các POST tạo/cập nhật có `Idempotency-Key` bằng Postman dynamic variable `{{$guid}}`, tạo UUID mới khi gửi request. Nếu cần gửi lại cùng một thao tác sau timeout trên server thật, giữ và dùng lại đúng giá trị key của request ban đầu; không tạo key mới.
 - Các request `PATCH` minh họa cập nhật một phần; có thể chỉ gửi những trường cần thay đổi.
-- Collection hiện có 69 request, bao phủ Auth, Users, danh mục Sprint 1, Pricing, Orders, Trips, Manifest, Tracking, Delivery, COD, Incidents, Statistics, Media và Notifications. Hai request Notifications đã được thêm theo OpenAPI hiện tại.
+- Collection hiện có 71 request, bao phủ Auth, Users, danh mục Sprint 1, Pricing, Orders, Trips, Manifest, Tracking, Delivery, COD, Incidents, Statistics, Media và Notifications. Hai request Notifications và hai request giao lại/hoàn tất hoàn hàng đã được đồng bộ với OpenAPI hiện tại.
 - Một số endpoint nghiệp vụ ở OpenAPI là thiết kế đề xuất cho sprint sau; Prism tạo response giả từ schema, không thực hiện nghiệp vụ hay lưu dữ liệu.
