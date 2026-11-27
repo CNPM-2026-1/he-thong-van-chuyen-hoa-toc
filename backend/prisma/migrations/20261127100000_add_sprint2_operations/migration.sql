@@ -178,7 +178,7 @@ CREATE TABLE "cod_reconciliation_items" (
   CONSTRAINT "cod_reconciliation_items_pkey" PRIMARY KEY ("id")
 );
 CREATE UNIQUE INDEX "cod_reconciliation_items_reconciliation_id_transaction_id_key" ON "cod_reconciliation_items"("reconciliation_id","transaction_id");
-CREATE UNIQUE INDEX "cod_reconciliation_items_transaction_id_key" ON "cod_reconciliation_items"("transaction_id");
+CREATE INDEX "cod_reconciliation_items_transaction_id_idx" ON "cod_reconciliation_items"("transaction_id");
 
 CREATE TABLE "incidents" (
   "id" UUID NOT NULL,
