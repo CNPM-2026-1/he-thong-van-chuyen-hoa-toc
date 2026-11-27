@@ -3,7 +3,6 @@ import { ConfigService } from '@nestjs/config';
 import {
   CodTransactionStatus,
   DeliveryAttemptStatus,
-  IncidentStatus,
   MediaPurpose,
   NotificationType,
   OrderStatus,
@@ -459,7 +458,7 @@ export class DeliveryService {
       async (tx) => {
         const order = await tx.order.findUnique({ where: { id: orderId } });
         if (!order) throw ApiException.notFound('Không tìm thấy đơn hàng');
-        if (![OrderStatus.DELIVERY_FAILED, OrderStatus.INCIDENT_HOLD].includes(order.status)) {
+        if (order.status !== OrderStatus.DELIVERY_FAILED && order.status !== OrderStatus.INCIDENT_HOLD) {
           throw ApiException.conflict(
             'ORDER_NOT_RETURNABLE',
             'Chỉ hoàn hàng khi đơn giao thất bại hoặc đang bị giữ do sự cố',
