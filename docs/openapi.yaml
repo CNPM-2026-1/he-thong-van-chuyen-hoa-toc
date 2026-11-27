@@ -4,7 +4,7 @@ info:
   version: 1.0.0
   description: 'Hợp đồng REST API đề xuất cho hệ thống quản lý quy trình vận chuyển hàng hóa hỏa tốc liên tỉnh.
     Quy ước Sprint 1: /api/v1, JSON, role CUSTOMER/STAFF/DRIVER/MANAGER/ADMIN; list {items,page,total}; errors {code,message}.
-    Endpoint auth/users/danh mục thuộc phạm vi nền tảng Sprint 1. Các endpoint nghiệp vụ được đặc tả cho Sprint 2+ là đề xuất độc lập của TV8 để mobile/web dùng mock; role, data scope, transition, công thức giá/COD và chính sách retry cần đối chiếu với các đầu mục liên quan trước khi triển khai chính thức. Mã lỗi dùng VALIDATION_ERROR (400), UNAUTHENTICATED (401), FORBIDDEN (403), NOT_FOUND (404), CONFLICT (409), UNPROCESSABLE_ENTITY (422). x-roles chỉ là role tối thiểu; backend vẫn phải kiểm tra quyền sở hữu/phân công theo resource.'
+    Endpoint auth/users/danh mục là nền tảng Sprint 1. Các endpoint nghiệp vụ Sprint 2 được đồng bộ với backend branch feature/sprint2-bo2-backend; mô hình manifest hiện quản lý từng Package thuộc Order, dựa trên KienHang/ChiTietPhieuKe trong ERD và cần TV5/nhóm xác nhận trước khi merge. API có thể bị giới hạn quyền STAFF theo bến cho tới khi schema có bảng phân công nhân viên. Mã lỗi dùng VALIDATION_ERROR (400), UNAUTHENTICATED (401), FORBIDDEN (403), NOT_FOUND (404), CONFLICT (409), UNPROCESSABLE_ENTITY (422). x-roles chỉ là role tối thiểu; backend vẫn phải kiểm tra quyền sở hữu/phân công theo resource.'
 servers:
 - url: http://localhost:3000/api/v1
   description: Backend local (NestJS)
@@ -4279,7 +4279,6 @@ paths:
         '500':
           $ref: '#/components/responses/InternalError'
       x-roles:
-      - STAFF
       - DRIVER
       - MANAGER
       - ADMIN
@@ -4474,7 +4473,6 @@ paths:
         '500':
           $ref: '#/components/responses/InternalError'
       x-roles:
-      - STAFF
       - DRIVER
       - MANAGER
       - ADMIN
@@ -4670,7 +4668,6 @@ paths:
         '500':
           $ref: '#/components/responses/InternalError'
       x-roles:
-      - STAFF
       - DRIVER
       - MANAGER
       - ADMIN
@@ -4769,7 +4766,7 @@ paths:
           $ref: '#/components/responses/InternalError'
       x-roles:
       - MANAGER
-      - STAFF
+      - ADMIN
       security:
       - bearerAuth: []
       parameters:
@@ -4862,9 +4859,9 @@ paths:
         '500':
           $ref: '#/components/responses/InternalError'
       x-roles:
-      - STAFF
       - DRIVER
       - MANAGER
+      - ADMIN
       security:
       - bearerAuth: []
       parameters:
@@ -5062,7 +5059,6 @@ paths:
         '500':
           $ref: '#/components/responses/InternalError'
       x-roles:
-      - STAFF
       - DRIVER
       - MANAGER
       - ADMIN
@@ -5911,7 +5907,6 @@ paths:
         '500':
           $ref: '#/components/responses/InternalError'
       x-roles:
-      - STAFF
       - DRIVER
       - MANAGER
       - ADMIN
@@ -6016,9 +6011,9 @@ paths:
         '500':
           $ref: '#/components/responses/InternalError'
       x-roles:
-      - STAFF
       - DRIVER
       - MANAGER
+      - ADMIN
       security:
       - bearerAuth: []
       requestBody:
@@ -6108,7 +6103,6 @@ paths:
         '500':
           $ref: '#/components/responses/InternalError'
       x-roles:
-      - STAFF
       - DRIVER
       - MANAGER
       - ADMIN
