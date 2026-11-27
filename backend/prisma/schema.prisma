@@ -52,6 +52,101 @@ enum TripStatus {
   CANCELLED
 }
 
+enum OrderStatus {
+  PENDING_RECEIPT
+  RECEIVED
+  WAITING_FOR_DISPATCH
+  IN_TRANSIT
+  AT_DESTINATION
+  OUT_FOR_DELIVERY
+  DELIVERY_FAILED
+  INCIDENT_HOLD
+  RETURNING
+  DELIVERED
+  RETURNED
+  CANCELLED
+}
+
+enum ServiceLevel {
+  STANDARD
+  EXPRESS
+}
+
+enum ManifestStatus {
+  OPEN
+  CLOSED
+}
+
+enum ManifestItemStatus {
+  PENDING_LOAD
+  LOADED
+  UNLOADED
+  MISSING
+  DAMAGED
+}
+
+enum DeliveryAttemptStatus {
+  DELIVERED
+  FAILED
+}
+
+enum DeliveryFailureReason {
+  RECIPIENT_ABSENT
+  INVALID_ADDRESS
+  REFUSED
+  OTHER
+}
+
+enum CodTransactionStatus {
+  PENDING_REMITTANCE
+  REMITTED
+  RECONCILED
+}
+
+enum CodReconciliationStatus {
+  MATCHED
+  MISMATCH_PENDING_REVIEW
+}
+
+enum IncidentType {
+  DELAY
+  ACCIDENT
+  DAMAGED_PACKAGE
+  LOST_PACKAGE
+  VEHICLE_FAILURE
+  RECIPIENT_ISSUE
+  OTHER
+}
+
+enum IncidentSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum IncidentStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum NotificationType {
+  ORDER_STATUS
+  DELIVERY
+  COD
+  INCIDENT
+  TRIP
+  SYSTEM
+}
+
+enum MediaPurpose {
+  DELIVERY_PROOF
+  INCIDENT_EVIDENCE
+  OTHER
+}
+
 model User {
   id           String     @id @default(uuid()) @db.Uuid
   fullName     String     @map("full_name")
@@ -67,7 +162,17 @@ model User {
   refreshTokens      RefreshToken[]
   driver             Driver?
   tripStatusChanges  TripStatusHistory[]
-  idempotencyRecords IdempotencyRecord[]
+  idempotencyRecords  IdempotencyRecord[]
+  orders              Order[]              @relation("OrderCustomer")
+  createdManifests    Manifest[]           @relation("ManifestCreator")
+  scannedManifestItems ManifestItem[]      @relation("ManifestScanner")
+  orderStatusChanges  OrderStatusHistory[] @relation("OrderStatusActor")
+  deliveryOtps        DeliveryOtp[]        @relation("DeliveryOtpRequester")
+  deliveryAttempts    DeliveryAttempt[]    @relation("DeliveryAttemptActor")
+  codReconciliations  CodReconciliation[]  @relation("CodReconciliationActor")
+  reportedIncidents   Incident[]           @relation("IncidentReporter")
+  notifications      Notification[]
+  mediaObjects       MediaObject[]
 
   @@index([role])
   @@map("users")
@@ -102,8 +207,10 @@ model Station {
   updatedAt DateTime    @updatedAt @map("updated_at") @db.Timestamptz(3)
   deletedAt DateTime?   @map("deleted_at") @db.Timestamptz(3)
 
-  originRoutes      Route[] @relation("RouteOrigin")
-  destinationRoutes Route[] @relation("RouteDestination")
+  originRoutes      Route[]  @relation("RouteOrigin")
+  destinationRoutes Route[]  @relation("RouteDestination")
+  originOrders      Order[]  @relation("OrderOrigin")
+  destinationOrders Order[]  @relation("OrderDestination")
 
   @@index([province])
   @@map("stations")
@@ -161,10 +268,13 @@ model Driver {
   updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
   deletedAt        DateTime? @map("deleted_at") @db.Timestamptz(3)
 
-  user           User     @relation(fields: [userId], references: [id])
-  defaultVehicle Vehicle? @relation(fields: [defaultVehicleId], references: [id])
-  trips         Trip[]
-  tripLocations TripLocation[]
+  user             User              @relation(fields: [userId], references: [id])
+  defaultVehicle   Vehicle?          @relation(fields: [defaultVehicleId], references: [id])
+  trips            Trip[]
+  tripLocations    TripLocation[]
+  deliveryOtps     DeliveryOtp[]
+  deliveryAttempts DeliveryAttempt[]
+  codTransactions  CodTransaction[]
 
   @@map("drivers")
 }
@@ -200,14 +310,19 @@ model Trip {
   actualDepartureAt   DateTime?  @map("actual_departure_at") @db.Timestamptz(3)
   actualArrivalAt     DateTime?  @map("actual_arrival_at") @db.Timestamptz(3)
   status              TripStatus @default(PLANNED)
+  version             Int        @default(1)
   createdAt           DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt           DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   route         Route          @relation(fields: [routeId], references: [id], onDelete: Restrict)
   vehicle       Vehicle        @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
   driver        Driver         @relation(fields: [driverId], references: [id], onDelete: Restrict)
-  locations     TripLocation[]
-  statusHistory TripStatusHistory[]
+  locations         TripLocation[]
+  statusHistory     TripStatusHistory[]
+  manifest          Manifest?
+  incidents         Incident[]
+  codTransactions   CodTransaction[]
+  codReconciliations CodReconciliation[]
 
   @@index([driverId, status])
   @@index([vehicleId, status])
@@ -268,4 +383,273 @@ model IdempotencyRecord {
   @@unique([actorId, operation, key])
   @@index([expiresAt])
   @@map("idempotency_records")
+}
+
+
+model Order {
+  id                   String      @id @default(uuid()) @db.Uuid
+  trackingCode         String      @unique @map("tracking_code")
+  customerId           String      @map("customer_id") @db.Uuid
+  recipientName        String      @map("recipient_name")
+  recipientPhone       String      @map("recipient_phone")
+  originStationId      String      @map("origin_station_id") @db.Uuid
+  destinationStationId String      @map("destination_station_id") @db.Uuid
+  description          String
+  packageCount         Int         @map("package_count")
+  weightGrams          Int         @map("weight_grams")
+  serviceLevel         ServiceLevel @map("service_level")
+  codAmountVnd         Int         @default(0) @map("cod_amount_vnd")
+  shippingFeeVnd       Int         @map("shipping_fee_vnd")
+  status               OrderStatus @default(PENDING_RECEIPT)
+  version              Int         @default(1)
+  deliveredAt          DateTime?   @map("delivered_at") @db.Timestamptz(3)
+  returnedAt           DateTime?   @map("returned_at") @db.Timestamptz(3)
+  note                 String?
+  createdAt            DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt            DateTime    @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  customer           User                @relation("OrderCustomer", fields: [customerId], references: [id], onDelete: Restrict)
+  originStation      Station             @relation("OrderOrigin", fields: [originStationId], references: [id], onDelete: Restrict)
+  destinationStation Station             @relation("OrderDestination", fields: [destinationStationId], references: [id], onDelete: Restrict)
+  packages           Package[]
+  statusHistory      OrderStatusHistory[]
+  deliveryOtps       DeliveryOtp[]
+  deliveryAttempts   DeliveryAttempt[]
+  codTransactions    CodTransaction[]
+  incidents          Incident[]
+  notifications      Notification[]
+
+  @@index([customerId, createdAt])
+  @@index([status, createdAt])
+  @@index([originStationId, destinationStationId])
+  @@map("orders")
+}
+
+model Package {
+  id          String   @id @default(uuid()) @db.Uuid
+  orderId     String   @map("order_id") @db.Uuid
+  packageCode String   @unique @map("package_code")
+  qrCode      String   @unique @map("qr_code")
+  description String?
+  weightGrams Int      @map("weight_grams")
+  lengthCm    Float?   @map("length_cm")
+  widthCm     Float?   @map("width_cm")
+  heightCm    Float?   @map("height_cm")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  order         Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  manifestItems ManifestItem[]
+
+  @@index([orderId])
+  @@map("packages")
+}
+
+model Manifest {
+  id          String         @id @default(uuid()) @db.Uuid
+  tripId      String         @unique @map("trip_id") @db.Uuid
+  code        String         @unique
+  createdById String         @map("created_by_id") @db.Uuid
+  status      ManifestStatus @default(OPEN)
+  version     Int            @default(1)
+  createdAt   DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  trip      Trip          @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  createdBy User          @relation("ManifestCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  items     ManifestItem[]
+
+  @@map("manifests")
+}
+
+model ManifestItem {
+  id          String             @id @default(uuid()) @db.Uuid
+  manifestId  String             @map("manifest_id") @db.Uuid
+  packageId   String             @map("package_id") @db.Uuid
+  status      ManifestItemStatus @default(PENDING_LOAD)
+  scannedById String?            @map("scanned_by_id") @db.Uuid
+  loadedAt    DateTime?          @map("loaded_at") @db.Timestamptz(3)
+  unloadedAt  DateTime?          @map("unloaded_at") @db.Timestamptz(3)
+  scannedAt   DateTime?          @map("scanned_at") @db.Timestamptz(3)
+  note        String?
+  createdAt   DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  manifest Manifest @relation(fields: [manifestId], references: [id], onDelete: Cascade)
+  package  Package  @relation(fields: [packageId], references: [id], onDelete: Restrict)
+  scannedBy User?   @relation("ManifestScanner", fields: [scannedById], references: [id], onDelete: SetNull)
+
+  @@unique([manifestId, packageId])
+  @@index([packageId, status])
+  @@map("manifest_items")
+}
+
+model OrderStatusHistory {
+  id          String      @id @default(uuid()) @db.Uuid
+  orderId     String      @map("order_id") @db.Uuid
+  changedById String      @map("changed_by_id") @db.Uuid
+  fromStatus  OrderStatus? @map("from_status")
+  toStatus    OrderStatus @map("to_status")
+  reason      String?
+  changedAt   DateTime    @default(now()) @map("changed_at") @db.Timestamptz(3)
+
+  order     Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  changedBy User  @relation("OrderStatusActor", fields: [changedById], references: [id], onDelete: Restrict)
+
+  @@index([orderId, changedAt])
+  @@map("order_status_history")
+}
+
+model DeliveryOtp {
+  id             String    @id @default(uuid()) @db.Uuid
+  orderId        String    @map("order_id") @db.Uuid
+  driverId       String    @map("driver_id") @db.Uuid
+  requestedById  String    @map("requested_by_id") @db.Uuid
+  codeHash       String    @map("code_hash")
+  codeCiphertext String    @map("code_ciphertext")
+  idempotencyKey String    @unique @map("idempotency_key")
+  attempts       Int       @default(0)
+  expiresAt      DateTime  @map("expires_at") @db.Timestamptz(3)
+  sentAt         DateTime  @map("sent_at") @db.Timestamptz(3)
+  consumedAt     DateTime? @map("consumed_at") @db.Timestamptz(3)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  order       Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  driver      Driver @relation(fields: [driverId], references: [id], onDelete: Restrict)
+  requestedBy User   @relation("DeliveryOtpRequester", fields: [requestedById], references: [id], onDelete: Restrict)
+
+  @@index([orderId, createdAt])
+  @@map("delivery_otps")
+}
+
+model DeliveryAttempt {
+  id              String                 @id @default(uuid()) @db.Uuid
+  orderId         String                 @map("order_id") @db.Uuid
+  driverId        String                 @map("driver_id") @db.Uuid
+  actorId         String                 @map("actor_id") @db.Uuid
+  status          DeliveryAttemptStatus
+  recipientName   String?                @map("recipient_name")
+  codCollectedVnd Int?                   @map("cod_collected_vnd")
+  failureReason   DeliveryFailureReason? @map("failure_reason")
+  note            String?
+  photoObjectKeys Json?                  @map("photo_object_keys") @db.JsonB
+  deliveredAt     DateTime?              @map("delivered_at") @db.Timestamptz(3)
+  createdAt       DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  order  Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  driver Driver @relation(fields: [driverId], references: [id], onDelete: Restrict)
+  actor  User   @relation("DeliveryAttemptActor", fields: [actorId], references: [id], onDelete: Restrict)
+
+  @@index([orderId, createdAt])
+  @@map("delivery_attempts")
+}
+
+model CodTransaction {
+  id          String               @id @default(uuid()) @db.Uuid
+  orderId     String               @map("order_id") @db.Uuid
+  tripId      String?              @map("trip_id") @db.Uuid
+  driverId    String?              @map("driver_id") @db.Uuid
+  amountVnd   Int                  @map("amount_vnd")
+  status      CodTransactionStatus @default(PENDING_REMITTANCE)
+  collectedAt DateTime             @default(now()) @map("collected_at") @db.Timestamptz(3)
+  note        String?
+
+  order               Order                     @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  trip                Trip?                     @relation(fields: [tripId], references: [id], onDelete: SetNull)
+  driver              Driver?                   @relation(fields: [driverId], references: [id], onDelete: SetNull)
+  reconciliationItems CodReconciliationItem[]
+
+  @@index([tripId, status])
+  @@index([collectedAt])
+  @@map("cod_transactions")
+}
+
+model CodReconciliation {
+  id                String                  @id @default(uuid()) @db.Uuid
+  tripId            String                  @map("trip_id") @db.Uuid
+  reconciledById    String                  @map("reconciled_by_id") @db.Uuid
+  expectedAmountVnd Int                     @map("expected_amount_vnd")
+  countedAmountVnd  Int                     @map("counted_amount_vnd")
+  differenceVnd     Int                     @map("difference_vnd")
+  status            CodReconciliationStatus
+  note              String?
+  createdAt         DateTime                @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  trip         Trip @relation(fields: [tripId], references: [id], onDelete: Restrict)
+  reconciledBy User @relation("CodReconciliationActor", fields: [reconciledById], references: [id], onDelete: Restrict)
+  items        CodReconciliationItem[]
+
+  @@index([tripId, createdAt])
+  @@map("cod_reconciliations")
+}
+
+model CodReconciliationItem {
+  id               String @id @default(uuid()) @db.Uuid
+  reconciliationId String @map("reconciliation_id") @db.Uuid
+  transactionId    String @map("transaction_id") @db.Uuid
+
+  reconciliation CodReconciliation @relation(fields: [reconciliationId], references: [id], onDelete: Cascade)
+  transaction    CodTransaction    @relation(fields: [transactionId], references: [id], onDelete: Restrict)
+
+  @@unique([reconciliationId, transactionId])
+  @@unique([transactionId])
+  @@map("cod_reconciliation_items")
+}
+
+model Incident {
+  id                  String            @id @default(uuid()) @db.Uuid
+  type                IncidentType
+  severity            IncidentSeverity
+  status              IncidentStatus    @default(OPEN)
+  orderId             String?           @map("order_id") @db.Uuid
+  tripId              String?           @map("trip_id") @db.Uuid
+  reportedById        String            @map("reported_by_id") @db.Uuid
+  description         String
+  resolution          String?
+  orderPreviousStatus OrderStatus?      @map("order_previous_status")
+  photoObjectKeys     Json?             @map("photo_object_keys") @db.JsonB
+  createdAt           DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt           DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  order      Order? @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  trip       Trip?  @relation(fields: [tripId], references: [id], onDelete: SetNull)
+  reportedBy User   @relation("IncidentReporter", fields: [reportedById], references: [id], onDelete: Restrict)
+
+  @@index([status, createdAt])
+  @@index([orderId])
+  @@index([tripId])
+  @@map("incidents")
+}
+
+model Notification {
+  id           String           @id @default(uuid()) @db.Uuid
+  userId       String           @map("user_id") @db.Uuid
+  orderId      String?          @map("order_id") @db.Uuid
+  type         NotificationType
+  title        String
+  body         String
+  resourceType String?          @map("resource_type")
+  resourceId   String?          @map("resource_id") @db.Uuid
+  readAt       DateTime?        @map("read_at") @db.Timestamptz(3)
+  createdAt    DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  order Order? @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@index([userId, readAt, createdAt])
+  @@map("notifications")
+}
+
+model MediaObject {
+  id           String      @id @default(uuid()) @db.Uuid
+  objectKey    String      @unique @map("object_key")
+  fileName     String      @map("file_name")
+  contentType  String      @map("content_type")
+  purpose      MediaPurpose
+  uploadedById String      @map("uploaded_by_id") @db.Uuid
+  expiresAt    DateTime    @map("expires_at") @db.Timestamptz(3)
+  createdAt    DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  uploadedBy User @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+
+  @@index([uploadedById, purpose, createdAt])
+  @@map("media_objects")
 }
