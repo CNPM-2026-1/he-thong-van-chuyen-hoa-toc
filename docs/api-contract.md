@@ -1290,3 +1290,47 @@ HTTP `200`
   "message": "Operation completed"
 }
 ```
+
+
+## 7. Hợp đồng bổ sung cho Sprint 2 – Bộ 2
+
+### 7.1 Mô hình Manifest
+
+- Một `Manifest` gắn với một `Trip`.
+- Một `ManifestItem` đại diện cho một `Package` vật lý, không phải toàn bộ Order.
+- Request `POST /trips/{tripId}/manifest/items` vẫn nhận `{ "orderId": "uuid" }`; backend lấy toàn bộ Package của Order và tạo từng ManifestItem.
+- Response thêm `manifestId`, `addedCount` và `items[]`; mỗi item có `packageId` và `packageCode`.
+- Order phải ở trạng thái `RECEIVED` hoặc `WAITING_FOR_DISPATCH`, đúng tuyến của Trip, có đủ Package theo `packageCount`, và không có kiện đang nằm trong một Trip chưa kết thúc.
+- Đây là quyết định kỹ thuật tạm thời bám theo cặp `KienHang`–`ChiTietPhieuKe` trong ERD của nhánh `database`; cần TV5/nhóm xác nhận trước khi merge.
+
+### 7.2 Chuyển trạng thái vận hành
+
+- Trip: `PLANNED → BOARDING → DISPATCHED → IN_TRANSIT → ARRIVED → COMPLETED`; hủy chỉ từ `PLANNED` hoặc `BOARDING`.
+- Không cho `DISPATCHED` nếu manifest rỗng hoặc còn kiện chưa `LOADED`.
+- Khi Trip chuyển `IN_TRANSIT`, các Order thuộc manifest chuyển `IN_TRANSIT` và ghi lịch sử.
+- Chỉ cho kiện `UNLOADED` khi Trip `ARRIVED`; Order chuyển `AT_DESTINATION` khi toàn bộ kiện của Order đã dỡ.
+- Kiện `MISSING`/`DAMAGED` tạo Incident và đưa Order vào `INCIDENT_HOLD`.
+- Giao hàng chỉ bắt đầu khi Trip `ARRIVED`, toàn bộ kiện của Order `UNLOADED`, và tài xế được phân công.
+- Chỉ xác nhận `DELIVERED` sau khi OTP hợp lệ; COD thu được phải khớp `codAmountVnd`.
+
+### 7.3 Idempotency và realtime
+
+- Những write operation có thể được retry sau timeout sử dụng header `Idempotency-Key` dạng UUID.
+- Cùng actor + operation + key + request payload trong 24 giờ trả lại response đầu tiên; dùng lại key với payload khác trả 409.
+- Socket.IO dùng access token ở handshake `auth.token`; refresh token không được gửi qua socket.
+- Event realtime là server-authoritative và được phát sau khi DB commit. REST vẫn là nguồn dữ liệu chính thức để đồng bộ sau reconnect.
+
+### 7.4 OTP và media
+
+- OTP gồm 6 chữ số, hết hạn sau 5 phút, tối đa 5 lần xác thực; DB lưu HMAC hash và AES-256-GCM ciphertext, không trả OTP trong API response.
+- Local development không có SMS provider sẽ ghi OTP vào log backend; production từ chối tạo luồng gửi OTP khi chưa cấu hình provider.
+- Ảnh/chứng từ upload trực tiếp tới S3-compatible storage bằng presigned PUT URL; backend lưu object key và metadata.
+- Môi trường demo dùng MinIO; cần cấu hình `S3_ENDPOINT`, `S3_BUCKET`, `S3_REGION`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`.
+
+### 7.5 Quyền truy cập cần phối hợp liên bộ
+
+- DRIVER bị giới hạn theo chuyến được phân công.
+- CUSTOMER chỉ theo dõi vị trí khi đơn của chính mình đang `IN_TRANSIT` trên chuyến có kiện trong manifest.
+- STAFF hiện chưa có quan hệ phân công theo bến trong schema; các API/room cần giới hạn theo bến sẽ từ chối STAFF cho tới khi nhóm bổ sung bảng assignment.
+- MANAGER/ADMIN được quyền vận hành theo phạm vi quyền hiện có.
+
