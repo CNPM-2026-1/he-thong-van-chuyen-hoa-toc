@@ -1,5 +1,5 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Query } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, Headers, Param, ParseUUIDPipe, Patch, Post, Query } from '@nestjs/common';
+import { ApiBearerAuth, ApiHeader, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Role, User } from '@prisma/client';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -21,9 +21,18 @@ export class TripsController {
 
   @Post()
   @Roles(Role.MANAGER, Role.ADMIN)
+  @ApiHeader({
+    name: 'Idempotency-Key',
+    required: true,
+    description: 'UUID; gửi lại cùng key và payload sẽ nhận lại kết quả tạo chuyến ban đầu',
+  })
   @ApiOperation({ summary: 'Tạo chuyến xe' })
-  create(@Body() dto: CreateTripDto, @CurrentUser() user: User) {
-    return this.trips.create(dto, user);
+  create(
+    @Body() dto: CreateTripDto,
+    @CurrentUser() user: User,
+    @Headers('Idempotency-Key') idempotencyKey?: string,
+  ) {
+    return this.trips.create(dto, user, idempotencyKey);
   }
 
   @Get(':tripId')
