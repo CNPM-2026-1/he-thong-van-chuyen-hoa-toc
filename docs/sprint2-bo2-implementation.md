@@ -13,7 +13,7 @@ Nền: `feature/tv7-trips-tracking` (đã kế thừa backend TV1 trên NestJS/P
 - Socket.IO Gateway: JWT handshake, rooms and server-side realtime events.
 
 ### TV8 – Kiên
-- Delivery start, OTP request, confirm delivery, failure and return APIs.
+- Delivery start, OTP request, confirm delivery, failure, manager-approved retry, return initiation and return completion APIs.
 - OTP hash + AES-GCM ciphertext, expiry, attempt count and SMS adapter.
 - DeliveryAttempt, COD transactions and reconciliation.
 - Incident report/resolution, customer and manager notifications.
@@ -50,6 +50,8 @@ Migrations:
 - STAFF chưa có bảng phân công theo bến trong schema; một số endpoint/rooms STAFF bị từ chối đến khi có mô hình assignment.
 - Write operations có Idempotency-Key UUID và lưu request hash/response trong 24 giờ.
 - Không đưa OTP vào response hay Socket.IO event.
+- Giao lại chỉ cho đơn DELIVERY_FAILED sau khi toàn bộ kiện đã dỡ; OTP của lần giao cũ bị vô hiệu.
+- Hoàn trực tiếp chỉ từ DELIVERY_FAILED; đơn INCIDENT_HOLD phải qua quy trình Incident. Xác nhận RETURNED ghi returnedAt và history.
 - Ảnh upload thông qua presigned URL; backend kiểm tra quyền sở hữu objectKey/purpose khi tham chiếu, nhưng bước kiểm tra object đã thực sự được upload cần được xác nhận ở tích hợp storage cuối cùng.
 
 ## Việc cần hoàn tất trước khi merge
