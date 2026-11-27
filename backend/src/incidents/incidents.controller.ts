@@ -13,14 +13,14 @@ export class IncidentsController {
   constructor(private readonly incidents: IncidentsService) {}
 
   @Get()
-  @Roles(Role.STAFF, Role.DRIVER, Role.MANAGER, Role.ADMIN)
+  @Roles(Role.DRIVER, Role.MANAGER, Role.ADMIN)
   @ApiOperation({ summary: 'Danh sách sự cố' })
   list(@Query() query: ListIncidentsQueryDto, @CurrentUser() user: User) {
     return this.incidents.list(query, user);
   }
 
   @Post()
-  @Roles(Role.STAFF, Role.DRIVER, Role.MANAGER, Role.ADMIN)
+  @Roles(Role.DRIVER, Role.MANAGER, Role.ADMIN)
   @ApiHeader({ name: 'Idempotency-Key', required: true })
   @ApiOperation({ summary: 'Báo sự cố' })
   create(
@@ -32,7 +32,7 @@ export class IncidentsController {
   }
 
   @Get(':incidentId')
-  @Roles(Role.STAFF, Role.DRIVER, Role.MANAGER, Role.ADMIN)
+  @Roles(Role.DRIVER, Role.MANAGER, Role.ADMIN)
   @ApiOperation({ summary: 'Chi tiết sự cố' })
   get(
     @Param('incidentId', ParseUUIDPipe) id: string,
