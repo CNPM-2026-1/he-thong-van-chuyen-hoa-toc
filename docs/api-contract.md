@@ -1334,3 +1334,10 @@ HTTP `200`
 - STAFF hiện chưa có quan hệ phân công theo bến trong schema; các API/room cần giới hạn theo bến sẽ từ chối STAFF cho tới khi nhóm bổ sung bảng assignment.
 - MANAGER/ADMIN được quyền vận hành theo phạm vi quyền hiện có.
 
+
+### 7.6 Giao lại và hoàn hàng
+
+- `POST /orders/{orderId}/delivery/retry`: MANAGER/ADMIN chỉ duyệt giao lại khi đơn đang `DELIVERY_FAILED`, chuyến đã `ARRIVED` và toàn bộ kiện thuộc đơn đã `UNLOADED`. OTP còn hiệu lực của lần giao trước bị vô hiệu; DRIVER phải yêu cầu OTP mới.
+- `POST /orders/{orderId}/return`: MANAGER/ADMIN chỉ khởi tạo hoàn trực tiếp từ `DELIVERY_FAILED`. Không được bỏ qua một Incident đang `INCIDENT_HOLD`; xử lý sự cố phải kết thúc trong API Incident và quyết định `orderResolution=RETURN`.
+- `POST /orders/{orderId}/return/complete`: MANAGER/ADMIN xác nhận hàng thực sự đã về bến gửi. Chỉ nhận đơn `RETURNING`, chuyển sang `RETURNED`, ghi `returnedAt` và `OrderStatusHistory`.
+- Cả ba thao tác đều bắt buộc `Idempotency-Key`. Client không tự đặt `status` trong body.
