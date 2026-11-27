@@ -511,6 +511,11 @@ export class DeliveryService {
           );
         }
 
+        const retryAt = new Date();
+        await tx.deliveryOtp.updateMany({
+          where: { orderId: order.id, consumedAt: null },
+          data: { consumedAt: retryAt },
+        });
         const updatedOrder = await tx.order.update({
           where: { id: order.id },
           data: { status: OrderStatus.OUT_FOR_DELIVERY, version: { increment: 1 } },
